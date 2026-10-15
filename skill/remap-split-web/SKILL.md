@@ -35,6 +35,27 @@ metadata:
 
 完整命令、参数与环境变量见 [references/pipeline.md](references/pipeline.md)。
 
+## 还想让人看到"贴到真实屏体上是什么样" → 加 3D 视口
+
+多出一个活的输入：**现场屏体的模型**（GLB，和投影相机同一套坐标）。
+
+先做一次数值验证再动手：用 GLB 里的相机把 mesh 顶点投影到成片帧，
+和坐标图预测的位置逐顶点比——实测能到 0.4–0.7 px / 6000 帧。
+对上了就说明**模型的 UV 就是切图的像素栅格，切图可以直接贴，不用重烘、不用缩放补偿**。
+
+```bash
+python scripts/glb_web.py <场景.glb> --out scene --set <集合目录>   # 剔孤立节点 + 量化，5 MB → 0.8 MB
+python scripts/build_page_v2.py <集合目录> scene <输出.html>        # 用 assets/page_template_v2.html
+python scripts/verify_3d_cpu.py scene/scene.glb <集合目录> <素材> _verify/cpu --frame 1560x400
+python scripts/browser_test_v2.py --tool <html> --art <素材> --ref2d <成片目录> --ref3d _verify/cpu/audience.png
+```
+
+三条经验值：观众机位用**场景相机 + 成片门框画幅比**取景；判定别用逐像素
+（GPU 与 CPU 采样方式不同，高频素材上能差 30/255），用**降 8 倍的结构比对 + 重建 vs 原图 +
+素材上下翻转的敏感度对照**；屏体自发光、关背面剔除、贴图要生成 mipmap。
+
+细节、数据契约与踩过的坑见 [references/3d-viewport.md](references/3d-viewport.md)。
+
 ## 四条必须守住的不变式
 
 这几条是踩过坑换来的，写错了不会报错，只会画面对不上或悄悄变糊：

@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>切屏切图工具 2.0 · UV 重映射 + 3D 预览</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --line: #e2e5ea; --ink: #1c2024;
+    --muted: #6b7480; --accent: #2f6bff; --ok: #1f9d55; --warn: #b7791f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { padding: 22px 28px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: .2px; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  main { padding: 20px 28px 60px; max-width: 1500px; }
+  .bar { display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+         background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+         padding: 14px 16px; margin-bottom: 18px; }
+  .drop { flex: 1 1 320px; min-height: 92px; border: 1.5px dashed #c3cad4; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center; text-align: center;
+          color: var(--muted); cursor: pointer; padding: 12px; background: #fbfcfd;
+          transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--accent); background: #f2f6ff; color: var(--accent); }
+  .drop.has { border-style: solid; border-color: var(--line); background: #fff; color: var(--ink); padding: 8px; }
+  .drop img { max-height: 132px; max-width: 100%; display: block; border-radius: 4px; }
+  .fields { display: flex; flex-direction: column; gap: 8px; }
+  label.f { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  input[type=text] { border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px;
+                     font: inherit; width: 210px; background: #fff; }
+  button { font: inherit; border-radius: 7px; border: 1px solid var(--line);
+           background: #fff; padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: #b9c2cf; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:disabled { opacity: .45; cursor: default; }
+  button.small { padding: 5px 10px; font-size: 12.5px; }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #status { font-size: 13px; color: var(--muted); min-height: 20px; margin-bottom: 14px; }
+  #status.err { color: #c0392b; }
+  #status.ok { color: var(--ok); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          overflow: hidden; display: flex; flex-direction: column; }
+  .card .head { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                border-bottom: 1px solid var(--line); }
+  .card .tag { font-weight: 700; font-size: 15px; min-width: 22px; text-align: center; }
+  .card .dim { color: var(--muted); font-size: 12.5px; }
+  .card .spacer { flex: 1; }
+  .card .shot { background: #101214; display: flex; align-items: center; justify-content: center; }
+  .card .shot img { max-width: 100%; max-height: 340px; display: block; cursor: zoom-in; }
+  .card .shot img:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .card .ph { color: #5b646f; font-size: 12.5px; padding: 46px 0; }
+  .card .sz { color: var(--muted); font-size: 12.5px; }
+  .note { margin-top: 22px; color: var(--muted); font-size: 12.5px; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 20px; background: #eef1f5; color: var(--muted); }
+
+  /* ---------- 3D 视口 ---------- */
+  #v3d { margin-top: 22px; border: 1px solid var(--line); border-radius: 10px;
+         background: var(--card); overflow: hidden; }
+  #v3d.off { display: none; }
+  #v3d .vhead { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  #v3d .vhead b { font-size: 15px; }
+  #v3d .vhead .dim { color: var(--muted); font-size: 12.5px; }
+  #v3d .spacer { flex: 1; }
+  #v3d .vbody { position: relative; background: #0d1014; }
+  #v3dcanvas { display: block; width: 100%; height: 520px; cursor: grab; touch-action: none; }
+  #v3dcanvas.drag { cursor: grabbing; }
+  #v3d .vhint { position: absolute; left: 12px; bottom: 10px; color: #8b96a3;
+                font-size: 12px; pointer-events: none; text-shadow: 0 1px 3px #000; }
+  #v3d .vfoot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+                padding: 9px 14px; border-top: 1px solid var(--line); font-size: 12.5px;
+                color: var(--muted); }
+  #v3d .vfoot label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  #v3d .vfoot .st { font-weight: 700; color: var(--ink); }
+  #v3d:fullscreen { border-radius: 0; }
+  #v3d:fullscreen #v3dcanvas { height: calc(100vh - 100px); }
+
+  /* 放大查看 */
+  #viewer { position: fixed; inset: 0; background: rgba(12,14,17,.94); z-index: 99;
+            display: none; flex-direction: column; }
+  #viewer.on { display: flex; }
+  #viewer .vbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+                  color: #e8ecf1; font-size: 13px; background: #1b2026;
+                  border-bottom: 1px solid #2b3138; }
+  #viewer .vbar .spacer { flex: 1; }
+  #viewer .vbar button { background: #2b3138; border-color: #3a424b; color: #e8ecf1; }
+  #viewer .vbody { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #viewer .vbody img { background: #000; box-shadow: 0 8px 40px rgba(0,0,0,.6); }
+  #viewer.fit .vbody img { max-width: 100%; max-height: 100%; }
+  #viewer .vhint { color: #9aa4b0; font-size: 12px; padding: 0 16px 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">切屏切图工具</h1>
+  <p>上传一张整幅画面，按内置的 UV 映射图切出各屏成片，并在右侧 3D 视口里看它在真实屏体上的效果。全部计算在这台电脑的浏览器里完成，不上传、不联网、不需要 Nuke。</p>
+</header>
+<main>
+  <div class="bar">
+    <div class="drop" id="drop">
+      <div id="dropHint">把画面拖进来、点这里选文件，或按 <b>Ctrl+V</b> 粘贴<br><span style="font-size:12px">建议 6000 × 1538（与现网素材一致）；其它尺寸也能用，会整幅拉伸</span></div>
+    </div>
+    <div class="fields">
+      <label class="f">输出文件名前缀
+        <input type="text" id="prefix" value="QiePing" spellcheck="false">
+      </label>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="pick">选择文件…</button>
+        <button class="primary" id="run" disabled>生成成片</button>
+        <button id="zip" disabled>打包下载 ZIP</button>
+      </div>
+    </div>
+  </div>
+  <div id="status">等待选择画面。</div>
+  <div class="grid" id="grid"></div>
+
+  <div id="v3d" class="off">
+    <div class="vhead">
+      <b>3D 预览</b>
+      <span class="dim" id="v3dinfo"></span>
+      <span class="spacer"></span>
+      <button class="small" id="v3dAudience">观众机位</button>
+      <button class="small" id="v3dSpin">环绕展示</button>
+      <button class="small" id="v3dReset">重置视角</button>
+      <button class="small" id="v3dFull">全屏</button>
+    </div>
+    <div class="vbody">
+      <canvas id="v3dcanvas"></canvas>
+      <div class="vhint" id="v3dhint">左键拖=环绕　右键/中键拖=平移　滚轮=缩放</div>
+    </div>
+    <div class="vfoot" id="v3dfoot">
+      <span>显示：</span>
+      <span id="v3dscreens"></span>
+      <label><input type="checkbox" id="v3dFrame" checked> 按成片门框 6000×1538 取景</label>
+      <span class="spacer"></span>
+      <span id="v3dnote">屏上的黑块是该区域不在投影覆盖范围内，与切出来的成片一致，不是渲染错误。</span>
+    </div>
+  </div>
+
+  <p class="note" id="foot"></p>
+</main>
+<div id="viewer">
+  <div class="vbar">
+    <b id="vname">—</b>
+    <span id="vmeta"></span>
+    <span class="spacer"></span>
+    <button id="vzoom">1:1</button>
+    <button id="vclose">关闭 (Esc)</button>
+  </div>
+  <div class="vbody"><img id="vimg" alt=""></div>
+  <div class="vhint">点「1:1」看原始像素（可滚动），再点一次回到适应窗口。Esc 或点左上角「关闭」退出。</div>
+</div>
+<script>
+"use strict";
+
+/* 由 build_page_v2.py 注入：集合名 + 各屏尺寸与内嵌素材 + 内嵌 3D 场景（scene.glb） */
+const UVSET = /*__UVSET_DATA__*/{ "name": "empty", "cell": 8, "screens": [], "scene": null };
+
+const SCREENS = UVSET.screens;
+const CELL = UVSET.cell || 8;
+const SCENE = UVSET.scene || null;
+
+const els = {
+  title: document.getElementById("title"),
+  foot: document.getElementById("foot"),
+  drop: document.getElementById("drop"),
+  prefix: document.getElementById("prefix"),
+  fileInput: document.getElementById("fileInput"),
+  pick: document.getElementById("pick"),
+  run: document.getElementById("run"),
+  zip: document.getElementById("zip"),
+  status: document.getElementById("status"),
+  grid: document.getElementById("grid"),
+};
+
+let artBitmap = null;
+let results = {};
+let busy = false;
+
+els.title.textContent = "切屏切图工具 2.0 · " + UVSET.name;
+els.foot.textContent = "屏幕清单由 UV 集合（" + UVSET.name + "）决定："
+  + SCREENS.map((s) => s.name + " " + s.out[0] + "×" + s.out[1]).join("、")
+  + "；统一 8-bit sRGB PNG、黑底。"
+  + (SCENE ? " 3D 预览用的是场景文件里的观众机位与屏体模型。" : "");
+
+/* ---------------- 页面骨架 ---------------- */
+
+const panels = {};
+for (const sc of SCREENS) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    '<div class="head"><span class="tag">' + sc.name + '</span>' +
+    '<span class="dim">' + sc.out[0] + " × " + sc.out[1] + '</span>' +
+    '<span class="sz"></span>' +
+    '<span class="spacer"></span>' +
+    '<button class="small zoom" disabled>放大</button>' +
+    '<button class="small dl" disabled>下载 PNG</button></div>' +
+    '<div class="shot"><div class="ph">尚未生成</div></div>';
+  els.grid.appendChild(card);
+  panels[sc.name] = {
+    card, shot: card.querySelector(".shot"), dl: card.querySelector(".dl"),
+    zoom: card.querySelector(".zoom"), sz: card.querySelector(".sz"), def: sc,
+  };
+  panels[sc.name].dl.addEventListener("click", () => downloadOne(sc.name));
+  panels[sc.name].zoom.addEventListener("click", () => openViewer(sc.name));
+}
+
+/* ---------------- 放大查看 ---------------- */
+
+const viewer = document.getElementById("viewer");
+const vimg = document.getElementById("vimg");
+const vname = document.getElementById("vname");
+const vmeta = document.getElementById("vmeta");
+let viewerScreen = null;
+
+function fmtSize(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  return bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB"
+                          : (bytes / 1024).toFixed(0) + " KB";
+}
+
+function openViewer(name) {
+  const r = results[name];
+  if (!r) return;
+  viewerScreen = name;
+  vimg.src = r.url;
+  vimg.alt = name;
+  vname.textContent = name + " 屏";
+  vmeta.textContent = r.w + " × " + r.h + "　" + fmtSize(r.bytes) + "　" + r.filename;
+  viewer.classList.add("on", "fit");
+  document.getElementById("vzoom").textContent = "1:1";
+}
+
+function closeViewer() {
+  viewer.classList.remove("on");
+  vimg.removeAttribute("src");
+  viewerScreen = null;
+}
+
+document.getElementById("vclose").addEventListener("click", closeViewer);
+document.getElementById("vzoom").addEventListener("click", () => {
+  const fit = viewer.classList.toggle("fit");
+  document.getElementById("vzoom").textContent = fit ? "1:1" : "适应窗口";
+});
+viewer.querySelector(".vbody").addEventListener("click", (e) => {
+  if (e.target === vimg) {
+    const fit = viewer.classList.toggle("fit");
+    document.getElementById("vzoom").textContent = fit ? "1:1" : "适应窗口";
+  }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeViewer(); });
+
+function setStatus(text, cls) {
+  els.status.textContent = text;
+  els.status.className = cls || "";
+}
+
+/* ---------------- 载入映射素材 ---------------- */
+
+/* 用 <img> 而不是 fetch：双击打开（file://）时 fetch 一个 data: URL 不一定被允许 */
+function loadBitmap(url, opts) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => createImageBitmap(img, opts || {}).then(resolve, reject);
+    img.onerror = () => reject(new Error("内置映射素材载入失败"));
+    img.src = url;
+  });
+}
+
+let assetPromise = null;
+function ensureAssets() {
+  if (assetPromise) return assetPromise;
+  const jobs = [];
+  /* 关键：不加 premultiplyAlpha:'none' 的话，带 alpha 的贴图会被预乘掉。
+     本套素材是纯 RGB（不含 alpha），这里仍然显式关掉，防止意外。 */
+  const opts = { premultiplyAlpha: "none", colorSpaceConversion: "none" };
+  for (const sc of SCREENS) {
+    jobs.push(loadBitmap(sc.gridUUrl, opts).then((b) => { sc.gridUBmp = b; }));
+    jobs.push(loadBitmap(sc.gridVUrl, opts).then((b) => { sc.gridVBmp = b; }));
+    jobs.push(loadBitmap(sc.maskUrl, opts).then((b) => { sc.maskBmp = b; }));
+  }
+  assetPromise = Promise.all(jobs).then(() => true);
+  return assetPromise;
+}
+
+/* ---------------- 选图 ---------------- */
+
+function openPicker() { els.fileInput.click(); }
+els.drop.addEventListener("click", openPicker);
+els.pick.addEventListener("click", openPicker);
+
+els.fileInput.addEventListener("change", () => {
+  const f = els.fileInput.files && els.fileInput.files[0];
+  els.fileInput.value = "";
+  if (f) takeFile(f);
+});
+
+document.addEventListener("paste", (e) => {
+  const items = (e.clipboardData && e.clipboardData.files) || [];
+  if (items.length) { e.preventDefault(); takeFile(items[0]); }
+});
+
+["dragenter", "dragover"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.remove("over"); }));
+els.drop.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) takeFile(f);
+});
+
+function takeFile(file) {
+  if (!/^image\//.test(file.type)) { setStatus("这个文件不是图片。", "err"); return; }
+  createImageBitmap(file, { colorSpaceConversion: "none", premultiplyAlpha: "none" })
+    .then((bmp) => {
+      if (artBitmap && artBitmap.close) artBitmap.close();
+      artBitmap = bmp;
+      els.drop.classList.add("has");
+      els.drop.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      els.drop.appendChild(img);
+      const ar = bmp.width / bmp.height;
+      const want = 6000 / 1538;
+      const extra = Math.abs(ar - want) / want > 0.01
+        ? " 　（当前宽高比 " + ar.toFixed(3) + "，与标准 " + want.toFixed(3) + " 不一致，会整幅拉伸）" : "";
+      setStatus("已载入 " + bmp.width + " × " + bmp.height + "。" + extra);
+      els.run.disabled = false;
+      els.zip.disabled = true;
+      clearResults();
+    })
+    .catch((e) => setStatus("读图失败：" + e.message, "err"));
+}
+
+function clearResults() {
+  results = {};
+  for (const sc of SCREENS) {
+    panels[sc.name].shot.innerHTML = '<div class="ph">尚未生成</div>';
+    panels[sc.name].dl.disabled = true;
+    panels[sc.name].zoom.disabled = true;
+    panels[sc.name].sz.textContent = "";
+  }
+  if (V3D.ready) V3D.refreshTextures();
+}
+
+/* 抽查 64x64 缩略图，判断这次渲染是不是整张全黑（素材超出显卡上限之类会这样）。 */
+function looksBlank(canvas) {
+  const c = document.createElement("canvas");
+  c.width = 64; c.height = 64;
+  const g = c.getContext("2d");
+  g.drawImage(canvas, 0, 0, 64, 64);
+  const d = g.getImageData(0, 0, 64, 64).data;
+  let mx = 0;
+  for (let i = 0; i < d.length; i += 4) mx = Math.max(mx, d[i], d[i + 1], d[i + 2]);
+  return mx < 8;
+}
+
+/* ---------------- WebGL 重映射（2D 切图） ---------------- */
+
+const VERT = `#version 300 es
+precision highp float;
+const vec2 P[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0));
+void main(){ gl_Position = vec4(P[gl_VertexID], 0.0, 1.0); }
+`;
+
+const FRAG = `#version 300 es
+precision highp float;
+precision highp sampler2D;
+
+uniform sampler2D uGridU;
+uniform sampler2D uGridV;
+uniform sampler2D uMask;
+uniform sampler2D uArt;
+uniform vec2 uGridSize;
+uniform vec2 uPadSize;
+uniform vec2 uOutSize;
+uniform vec2 uArtSize;
+out vec4 outColor;
+
+float srgbToLin(float c){
+  return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
+}
+float linToSrgb(float c){
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * pow(c, 1.0/2.4) - 0.055;
+}
+vec3 fetchLin(ivec2 c){
+  ivec2 m = ivec2(uArtSize) - 1;
+  vec3 s = texelFetch(uArt, clamp(c, ivec2(0), m), 0).rgb;
+  return vec3(srgbToLin(s.r), srgbToLin(s.g), srgbToLin(s.b));
+}
+// 网格按 高8位/低8位 分开存，必须自己取 4 个格子、拼回 16-bit 之后再插值。
+// 交给硬件插值的话它只按字节插，高低位之间的进位会被放大 256 倍。
+float grid16(sampler2D tex, ivec2 c){
+  vec3 t = texelFetch(tex, c, 0).rgb;
+  return floor(t.r * 255.0 + 0.5) * 256.0 + floor(t.g * 255.0 + 0.5);
+}
+float gridAt(sampler2D tex, vec2 gt, ivec2 m){
+  vec2 i0f = floor(gt);
+  vec2 f = gt - i0f;
+  ivec2 i0 = clamp(ivec2(i0f), ivec2(0), m);
+  ivec2 i1 = clamp(ivec2(i0f) + ivec2(1, 0), ivec2(0), m);
+  ivec2 i2 = clamp(ivec2(i0f) + ivec2(0, 1), ivec2(0), m);
+  ivec2 i3 = clamp(ivec2(i0f) + ivec2(1, 1), ivec2(0), m);
+  float a0 = grid16(tex, i0), a1 = grid16(tex, i1);
+  float a2 = grid16(tex, i2), a3 = grid16(tex, i3);
+  return mix(mix(a0, a1, f.x), mix(a2, a3, f.x), f.y);
+}
+
+void main(){
+  // 帧缓冲的 y 向上、图片行号向下，这里翻一次让两边对齐
+  vec2 fc = vec2(gl_FragCoord.x, uOutSize.y - gl_FragCoord.y);
+
+  // 1) 查网格，得到归一化坐标 (u, v)。v 原点在**左下**（Nuke 惯例）。
+  vec2 gt = fc / uPadSize * uGridSize - 0.5;
+  ivec2 gm = ivec2(uGridSize) - 1;
+  vec2 uv = vec2(gridAt(uGridU, gt, gm), gridAt(uGridV, gt, gm)) / 65535.0;
+
+  // 2) 采样素材：贴图的 v=0 是第一行（顶部），所以要把 v 翻过来。
+  vec2 srcUV = vec2(uv.x, 1.0 - uv.y);
+  vec2 px = clamp(srcUV * uArtSize - 0.5, vec2(0.0), uArtSize - 1.0);
+  vec2 i0f = floor(px);
+  vec2 fr = px - i0f;
+  ivec2 i0 = ivec2(i0f);
+  vec3 c00 = fetchLin(i0);
+  vec3 c10 = fetchLin(i0 + ivec2(1, 0));
+  vec3 c01 = fetchLin(i0 + ivec2(0, 1));
+  vec3 c11 = fetchLin(i0 + ivec2(1, 1));
+  vec3 col = mix(mix(c00, c10, fr.x), mix(c01, c11, fr.x), fr.y);
+
+  // 3) 乘覆盖率（mask 自带抗锯齿）
+  float cover = texture(uMask, fc / uOutSize).r;
+  col *= cover;
+
+  outColor = vec4(linToSrgb(col.r), linToSrgb(col.g), linToSrgb(col.b), 1.0);
+}
+`;
+
+function compile(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    throw new Error("着色器编译失败：" + gl.getShaderInfoLog(sh));
+  }
+  return sh;
+}
+
+function makeTex(gl, bitmap, linear) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+  const f = linear ? gl.LINEAR : gl.NEAREST;
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+/* 2.0 起改成一个共享的 WebGL2 上下文（1.x 每屏新建一个，连点几次会耗尽上下文名额），
+   渲完直接拷进 2D 画布，画布既用于显示也用作 3D 视口的贴图源。 */
+const G2 = { gl: null, canvas: null, prog: null, loc: {}, U: {}, V: {}, M: {}, art: null };
+
+function ensureGL() {
+  if (G2.gl) return G2.gl;
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl2", { alpha: false, antialias: false, preserveDrawingBuffer: true });
+  if (!gl) throw new Error("这个浏览器不支持 WebGL2，请用较新的 Edge / Chrome 打开。");
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    throw new Error("着色器链接失败：" + gl.getProgramInfoLog(prog));
+  }
+  gl.useProgram(prog);
+  gl.bindVertexArray(gl.createVertexArray());
+  G2.gl = gl;
+  G2.canvas = canvas;
+  G2.prog = prog;
+  G2.loc = {
+    gridU: gl.getUniformLocation(prog, "uGridU"),
+    gridV: gl.getUniformLocation(prog, "uGridV"),
+    mask: gl.getUniformLocation(prog, "uMask"),
+    art: gl.getUniformLocation(prog, "uArt"),
+    gridSize: gl.getUniformLocation(prog, "uGridSize"),
+    padSize: gl.getUniformLocation(prog, "uPadSize"),
+    outSize: gl.getUniformLocation(prog, "uOutSize"),
+    artSize: gl.getUniformLocation(prog, "uArtSize"),
+  };
+  gl.uniform1i(G2.loc.gridU, 0);
+  gl.uniform1i(G2.loc.gridV, 1);
+  gl.uniform1i(G2.loc.mask, 2);
+  gl.uniform1i(G2.loc.art, 3);
+  return gl;
+}
+
+function renderScreen(sc) {
+  const W = sc.out[0], H = sc.out[1];
+  const gl = ensureGL();
+  const canvas = G2.canvas;
+  canvas.width = W;
+  canvas.height = H;
+
+  if (!G2.U[sc.name] || G2.U[sc.name].bmp !== sc.gridUBmp) {
+    G2.U[sc.name] = { bmp: sc.gridUBmp, tex: makeTex(gl, sc.gridUBmp, false) };
+    G2.V[sc.name] = { bmp: sc.gridVBmp, tex: makeTex(gl, sc.gridVBmp, false) };
+    G2.M[sc.name] = { bmp: sc.maskBmp, tex: makeTex(gl, sc.maskBmp, true) };
+  }
+  if (!G2.art || G2.art.bmp !== artBitmap) {
+    if (G2.art) gl.deleteTexture(G2.art.tex);
+    G2.art = { bmp: artBitmap, tex: makeTex(gl, artBitmap, false) };
+  }
+
+  gl.useProgram(G2.prog);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G2.U[sc.name].tex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G2.V[sc.name].tex);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, G2.M[sc.name].tex);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, G2.art.tex);
+
+  gl.uniform2f(G2.loc.gridSize, sc.grid[0], sc.grid[1]);
+  gl.uniform2f(G2.loc.padSize, sc.pad[0], sc.pad[1]);
+  gl.uniform2f(G2.loc.outSize, W, H);
+  gl.uniform2f(G2.loc.artSize, artBitmap.width, artBitmap.height);
+
+  gl.viewport(0, 0, W, H);
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  const out = document.createElement("canvas");
+  out.width = W;
+  out.height = H;
+  out.getContext("2d").drawImage(canvas, 0, 0);
+  return out;
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("导出 PNG 失败"))), "image/png"));
+}
+
+/* ---------------- 生成 ---------------- */
+
+els.run.addEventListener("click", () => {
+  if (!artBitmap || busy) return;
+  busy = true;
+  els.run.disabled = true;
+  els.zip.disabled = true;
+  clearResults();
+  setStatus("正在准备映射素材…");
+  ensureAssets()
+    .then(async () => {
+      const t0 = performance.now();
+      const blanks = [];
+      for (const sc of SCREENS) {
+        setStatus("正在生成 " + sc.name + " 屏…");
+        panels[sc.name].shot.innerHTML = '<div class="ph">生成中…</div>';
+        await new Promise((r) => setTimeout(r, 0));
+        const canvas = renderScreen(sc);
+        if (looksBlank(canvas)) blanks.push(sc.name);
+        const blob = await canvasToBlob(canvas);
+        const url = URL.createObjectURL(blob);
+        const p = panels[sc.name];
+        const filename = fileName(sc.name, "png");
+        results[sc.name] = { blob, url, w: canvas.width, h: canvas.height,
+                             bytes: blob.size, filename, canvas };
+        p.shot.innerHTML = "";
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = sc.name + " 屏成片（点击放大）";
+        img.title = "点击放大查看";
+        img.addEventListener("click", () => openViewer(sc.name));
+        p.shot.appendChild(img);
+        p.dl.disabled = false;
+        p.zoom.disabled = false;
+        p.sz.textContent = fmtSize(blob.size);
+      }
+      const dt = ((performance.now() - t0) / 1000).toFixed(2);
+      const tip = "完成，共 " + SCREENS.length + " 张，用了 " + dt + " 秒。"
+        + "页面上就是每屏成片的预览，点图片可放大到 1:1 查看；可逐张下载，或打包下载。"
+        + (V3D.ready ? "下面 3D 视口已经同步贴好。" : "");
+      if (blanks.length) {
+        setStatus(tip + " 注意：" + blanks.join("、") + " 屏生成结果是全黑的，"
+          + "多半是素材尺寸超出显卡贴图上限，试试把画面缩到 8192 像素以内再传。", "err");
+      } else {
+        setStatus(tip, "ok");
+      }
+      els.zip.disabled = false;
+      if (V3D.ready) V3D.refreshTextures();
+    })
+    .catch((e) => setStatus("出错：" + e.message, "err"))
+    .finally(() => { busy = false; els.run.disabled = false; });
+});
+
+function namePrefix() {
+  return (els.prefix.value || "QiePing").trim().replace(/[\\/:*?"<>|]/g, "_") || "QiePing";
+}
+function fileName(screen, ext) { return namePrefix() + "_" + screen + "." + (ext || "png"); }
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function downloadOne(screen) {
+  const r = results[screen];
+  if (r) saveBlob(r.blob, fileName(screen, "png"));
+}
+
+/* ---------------- 极简 ZIP（仅存储，不压缩） ---------------- */
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() / 2)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, f.data.length, true);
+    lv.setUint32(22, f.data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    local.set(nameBytes, 30);
+    chunks.push(local, f.data);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, f.data.length, true);
+    cv.setUint32(24, f.data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    central.push(cd);
+    offset += local.length + f.data.length;
+  }
+
+  let cdSize = 0;
+  for (const c of central) cdSize += c.length;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+
+  const all = chunks.concat(central, [end]);
+  let total = 0;
+  for (const c of all) total += c.length;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of all) { out.set(c, p); p += c.length; }
+  return new Blob([out], { type: "application/zip" });
+}
+
+els.zip.addEventListener("click", async () => {
+  if (!results[SCREENS[0].name]) return;
+  setStatus("正在打包…");
+  const files = [];
+  for (const sc of SCREENS) {
+    const r = results[sc.name];
+    files.push({ name: fileName(sc.name, "png"), data: new Uint8Array(await r.blob.arrayBuffer()) });
+  }
+  saveBlob(buildZip(files), namePrefix() + "_" + UVSET.name + ".zip");
+  setStatus("已打包下载。", "ok");
+});
+
+/* ================================================================
+   3D 预览：内嵌 scene.glb（HAF 精简 + 量化）→ WebGL2 贴图上看真实屏体
+   观众机位 = 场景文件里的相机；自由视角 = 轨道相机
+   ================================================================ */
+
+const V3D = {
+  ready: false, gl: null, canvas: null, host: null,
+  scene: null, draws: [], screens: {}, cam: null,
+  tex: {}, texSize: 0,
+  mode: "audience", orbit: { target: [0, 0, 0], dist: 1, yaw: 0, pitch: 0 },
+  spin: false, visible: {}, frameOn: true, last: 0,
+};
+
+/* ---- 小矩阵库（列主序，和 glTF 一致） ---- */
+function m4mul(a, b) {
+  const o = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {
+    for (let r = 0; r < 4; r++) {
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1]
+                   + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+  }
+  return o;
+}
+function m4perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2);
+  return new Float32Array([
+    f / aspect, 0, 0, 0,
+    0, f, 0, 0,
+    0, 0, (far + near) / (near - far), -1,
+    0, 0, (2 * far * near) / (near - far), 0,
+  ]);
+}
+function m4lookAt(eye, center, up) {
+  let z = [eye[0] - center[0], eye[1] - center[1], eye[2] - center[2]];
+  let l = Math.hypot(z[0], z[1], z[2]) || 1;
+  z = [z[0] / l, z[1] / l, z[2] / l];
+  let x = [up[1] * z[2] - up[2] * z[1], up[2] * z[0] - up[0] * z[2], up[0] * z[1] - up[1] * z[0]];
+  l = Math.hypot(x[0], x[1], x[2]);
+  if (l < 1e-9) { x = [1, 0, 0]; l = 1; }
+  x = [x[0] / l, x[1] / l, x[2] / l];
+  const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+  return new Float32Array([
+    x[0], y[0], z[0], 0,
+    x[1], y[1], z[1], 0,
+    x[2], y[2], z[2], 0,
+    -(x[0] * eye[0] + x[1] * eye[1] + x[2] * eye[2]),
+    -(y[0] * eye[0] + y[1] * eye[1] + y[2] * eye[2]),
+    -(z[0] * eye[0] + z[1] * eye[1] + z[2] * eye[2]), 1,
+  ]);
+}
+function m4invert(m) {
+  const inv = new Float32Array(16);
+  const a = m;
+  inv[0] = a[5]*a[10]*a[15] - a[5]*a[11]*a[14] - a[9]*a[6]*a[15] + a[9]*a[7]*a[14] + a[13]*a[6]*a[11] - a[13]*a[7]*a[10];
+  inv[4] = -a[4]*a[10]*a[15] + a[4]*a[11]*a[14] + a[8]*a[6]*a[15] - a[8]*a[7]*a[14] - a[12]*a[6]*a[11] + a[12]*a[7]*a[10];
+  inv[8] = a[4]*a[9]*a[15] - a[4]*a[11]*a[13] - a[8]*a[5]*a[15] + a[8]*a[7]*a[13] + a[12]*a[5]*a[11] - a[12]*a[7]*a[9];
+  inv[12] = -a[4]*a[9]*a[14] + a[4]*a[10]*a[13] + a[8]*a[5]*a[14] - a[8]*a[6]*a[13] - a[12]*a[5]*a[10] + a[12]*a[6]*a[9];
+  inv[1] = -a[1]*a[10]*a[15] + a[1]*a[11]*a[14] + a[9]*a[2]*a[15] - a[9]*a[3]*a[14] - a[13]*a[2]*a[11] + a[13]*a[3]*a[10];
+  inv[5] = a[0]*a[10]*a[15] - a[0]*a[11]*a[14] - a[8]*a[2]*a[15] + a[8]*a[3]*a[14] + a[12]*a[2]*a[11] - a[12]*a[3]*a[10];
+  inv[9] = -a[0]*a[9]*a[15] + a[0]*a[11]*a[13] + a[8]*a[1]*a[15] - a[8]*a[3]*a[13] - a[12]*a[1]*a[11] + a[12]*a[3]*a[9];
+  inv[13] = a[0]*a[9]*a[14] - a[0]*a[10]*a[13] - a[8]*a[1]*a[14] + a[8]*a[2]*a[13] + a[12]*a[1]*a[10] - a[12]*a[2]*a[9];
+  inv[2] = a[1]*a[6]*a[15] - a[1]*a[7]*a[14] - a[5]*a[2]*a[15] + a[5]*a[3]*a[14] + a[13]*a[2]*a[7] - a[13]*a[3]*a[6];
+  inv[6] = -a[0]*a[6]*a[15] + a[0]*a[7]*a[14] + a[4]*a[2]*a[15] - a[4]*a[3]*a[14] - a[12]*a[2]*a[7] + a[12]*a[3]*a[6];
+  inv[10] = a[0]*a[5]*a[15] - a[0]*a[7]*a[13] - a[4]*a[1]*a[15] + a[4]*a[3]*a[13] + a[12]*a[1]*a[7] - a[12]*a[3]*a[5];
+  inv[14] = -a[0]*a[5]*a[14] + a[0]*a[6]*a[13] + a[4]*a[1]*a[14] - a[4]*a[2]*a[13] - a[12]*a[1]*a[6] + a[12]*a[2]*a[5];
+  inv[3] = -a[1]*a[6]*a[11] + a[1]*a[7]*a[10] + a[5]*a[2]*a[11] - a[5]*a[3]*a[10] - a[9]*a[2]*a[7] + a[9]*a[3]*a[6];
+  inv[7] = a[0]*a[6]*a[11] - a[0]*a[7]*a[10] - a[4]*a[2]*a[11] + a[4]*a[3]*a[10] + a[8]*a[2]*a[7] - a[8]*a[3]*a[6];
+  inv[11] = -a[0]*a[5]*a[11] + a[0]*a[7]*a[9] + a[4]*a[1]*a[11] - a[4]*a[3]*a[9] - a[8]*a[1]*a[7] + a[8]*a[3]*a[5];
+  inv[15] = a[0]*a[5]*a[10] - a[0]*a[6]*a[9] - a[4]*a[1]*a[10] + a[4]*a[2]*a[9] + a[8]*a[1]*a[6] - a[8]*a[2]*a[5];
+  let det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
+  if (Math.abs(det) < 1e-20) return null;
+  det = 1.0 / det;
+  const o = new Float32Array(16);
+  for (let i = 0; i < 16; i++) o[i] = inv[i] * det;
+  return o;
+}
+
+/* ---- glTF/GLB 里我们要的那一小撮 ---- */
+const CT = { 5120: [Int8Array, 1], 5121: [Uint8Array, 1], 5122: [Int16Array, 2],
+             5123: [Uint16Array, 2], 5125: [Uint32Array, 4], 5126: [Float32Array, 4] };
+const NC = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+
+function glType(gl, c) {
+  return c === 5126 ? gl.FLOAT : c === 5123 ? gl.UNSIGNED_SHORT : c === 5125 ? gl.UNSIGNED_INT
+       : c === 5121 ? gl.UNSIGNED_BYTE : c === 5122 ? gl.SHORT : gl.BYTE;
+}
+
+function parseGLB(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0x46546C67) throw new Error("不是 GLB 文件");
+  const len = dv.getUint32(8, true);
+  let off = 12, json = null, bin = null;
+  while (off + 8 <= len) {
+    const clen = dv.getUint32(off, true), ctype = dv.getUint32(off + 4, true);
+    const start = off + 8;
+    if (ctype === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, start, clen)));
+    else if (ctype === 0x004E4942) bin = new Uint8Array(buf, start, clen);
+    off = start + clen;
+  }
+  if (!json || !bin) throw new Error("GLB 里缺 JSON 或 BIN 段");
+  return { json, bin };
+}
+
+function readAccessor(g, i, want) {
+  const a = g.json.accessors[i];
+  const bv = g.json.bufferViews[a.bufferView];
+  const [Arr, sz] = CT[a.componentType];
+  const n = NC[a.type];
+  const stride = bv.byteStride || 0;
+  const base = (bv.byteOffset || 0) + (a.byteOffset || 0);
+  const abs = g.bin.byteOffset + base;
+  const count = a.count;
+  let data;
+  if (!stride || stride === sz * n) {
+    if (abs % sz === 0) {
+      data = new Arr(g.bin.buffer, abs, count * n);
+    } else {
+      data = new Arr(count * n);
+      const shift = (abs % sz) / sz;
+      const src = new Arr(g.bin.buffer, abs - (abs % sz));
+      for (let k = 0; k < count * n; k++) data[k] = src[k + shift];
+    }
+  } else {
+    // 交错布局：只能按字节读（TypedArray 的视图要求对齐）
+    data = new Arr(count * n);
+    const dv = new DataView(g.bin.buffer, g.bin.byteOffset);
+    const rd = {
+      5120: (o) => dv.getInt8(o), 5121: (o) => dv.getUint8(o),
+      5122: (o) => dv.getInt16(o, true), 5123: (o) => dv.getUint16(o, true),
+      5125: (o) => dv.getUint32(o, true), 5126: (o) => dv.getFloat32(o, true),
+    }[a.componentType];
+    for (let k = 0; k < count; k++) {
+      for (let j = 0; j < n; j++) data[k * n + j] = rd(base + k * stride + j * sz);
+    }
+  }
+  return { data, n, norm: !!a.normalized, ctype: a.componentType, want: want || n };
+}
+
+function buildScene(gl, g) {
+  const js = g.json;
+  const world = {};
+  const idMat = new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+  const walk = (i, parent) => {
+    const n = js.nodes[i];
+    let M = parent;
+    if (n.matrix) M = m4mul(parent, new Float32Array(n.matrix));
+    else if (n.translation || n.rotation || n.scale) {
+      const t = n.translation || [0, 0, 0], s = n.scale || [1, 1, 1], q = n.rotation || [0, 0, 0, 1];
+      const [x, y, z, w] = q;
+      const rm = new Float32Array([
+        1-2*(y*y+z*z), 2*(x*y+z*w), 2*(x*z-y*w), 0,
+        2*(x*y-z*w), 1-2*(x*x+z*z), 2*(y*z+x*w), 0,
+        2*(x*z+y*w), 2*(y*z-x*w), 1-2*(x*x+y*y), 0,
+        0, 0, 0, 1,
+      ]);
+      const sm = new Float32Array([s[0],0,0,0, 0,s[1],0,0, 0,0,s[2],0, 0,0,0,1]);
+      const tm = new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, t[0],t[1],t[2],1]);
+      M = m4mul(parent, m4mul(tm, m4mul(rm, sm)));
+    }
+    world[i] = M;
+    for (const c of n.children || []) walk(c, M);
+  };
+  for (const i of js.scenes[js.scene || 0].nodes) walk(i, idMat);
+
+  const draws = [];
+  const screens = {};
+  const byName = {};
+  for (const i of Object.keys(world)) byName[js.nodes[i].name] = Number(i);
+
+  for (const i of Object.keys(world)) {
+    const n = js.nodes[i];
+    if (n.mesh === undefined) continue;
+    const prim = js.meshes[n.mesh].primitives[0];
+    const pos = readAccessor(g, prim.attributes.POSITION);
+    const uv = prim.attributes.TEXCOORD_0 !== undefined ? readAccessor(g, prim.attributes.TEXCOORD_0) : null;
+    const idx = prim.indices !== undefined ? readAccessor(g, prim.indices) : null;
+    const vCount = pos.data.length / 3;
+    const buffers = {
+      pos: gl.createBuffer(), uv: null, idx: null,
+      count: idx ? idx.data.length : vCount,
+      posType: glType(gl, pos.ctype), posNorm: pos.norm,
+      uvType: uv ? glType(gl, uv.ctype) : 0, uvNorm: uv ? uv.norm : false,
+      type: null,
+    };
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.pos);
+    gl.bufferData(gl.ARRAY_BUFFER, pos.data, gl.STATIC_DRAW);
+    if (uv) {
+      buffers.uv = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.uv);
+      gl.bufferData(gl.ARRAY_BUFFER, uv.data, gl.STATIC_DRAW);
+    }
+    if (idx) {
+      buffers.idx = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.idx);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx.data, gl.STATIC_DRAW);
+      buffers.type = idx.data instanceof Uint32Array ? gl.UNSIGNED_INT
+                   : (idx.data instanceof Uint16Array ? gl.UNSIGNED_SHORT : gl.UNSIGNED_BYTE);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    }
+    const bbox = { min: [1e9, 1e9, 1e9], max: [-1e9, -1e9, -1e9] };
+    const d = draws.length;
+    draws.push({ name: n.name || ("node" + i), matrix: world[i], buffers, bbox, screen: null });
+    /* 量化过的顶点是 0..65535，自己算包围盒时要先归一化（GPU 那边由 normalized 标志负责）。
+       这里踩过一次：漏了这一步会把场景中心算到几万米外，近远裁剪面跟着飞走，画面全空。 */
+    const knorm = pos.norm ? 1 / 65535 : 1;
+    for (let vi = 0; vi < vCount; vi++) {
+      for (let c = 0; c < 3; c++) {
+        const v = pos.data[vi * 3 + c] * knorm;
+        bbox.min[c] = Math.min(bbox.min[c], v);
+        bbox.max[c] = Math.max(bbox.max[c], v);
+      }
+    }
+    // 找它对应哪块屏
+    if (SCENE.screens && n.name) {
+      for (const s of Object.keys(SCENE.screens)) {
+        if (SCENE.screens[s] === n.name) { screens[s] = d; draws[d].screen = s; }
+      }
+    }
+  }
+
+  let cam = null;
+  for (const i of Object.keys(world)) {
+    const n = js.nodes[i];
+    if (n.camera === undefined) continue;
+    if (SCENE.camera && n.name !== SCENE.camera) continue;
+    const c = js.cameras[n.camera].perspective || {};
+    cam = { matrix: world[i], yfov: c.yfov || 0.7, znear: c.znear || 0.001, zfar: c.zfar || 1000 };
+    break;
+  }
+  if (!cam) {
+    // 没有相机就自己摆一个：从场景前方看向中心
+    const c = sceneCenter(draws, false);
+    cam = { matrix: m4lookAt([c.ctr[0], c.ctr[1] + 0.1, c.ctr[2] + c.rad * 3], c.ctr, [0, 1, 0]),
+            yfov: 0.4, znear: 0.001, zfar: 1000 };
+  }
+  return { draws, screens, cam };
+}
+
+/* 只按 x/y/z 求包围盒（位置可能已经是归一化过的，节点矩阵会把它还原） */
+function sceneCenter(draws, useWorld) {
+  const min = [1e9, 1e9, 1e9], max = [-1e9, -1e9, -1e9];
+  for (const d of draws) {
+    for (let i = 0; i < 8; i++) {
+      const p = [(i & 1) ? d.bbox.max[0] : d.bbox.min[0],
+                 (i & 2) ? d.bbox.max[1] : d.bbox.min[1],
+                 (i & 4) ? d.bbox.max[2] : d.bbox.min[2], 1];
+      const M = d.matrix;
+      const w = [M[0]*p[0] + M[4]*p[1] + M[8]*p[2] + M[12],
+                 M[1]*p[0] + M[5]*p[1] + M[9]*p[2] + M[13],
+                 M[2]*p[0] + M[6]*p[1] + M[10]*p[2] + M[14]];
+      for (let c = 0; c < 3; c++) { min[c] = Math.min(min[c], w[c]); max[c] = Math.max(max[c], w[c]); }
+    }
+  }
+  const ctr = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
+  const rad = Math.max(1e-6, 0.5 * Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]));
+  return { ctr, rad, min, max };
+}
+
+const V3D_VERT = `#version 300 es
+precision highp float;
+uniform mat4 uMVP;
+uniform mat4 uModel;
+in vec3 aPos;
+in vec2 aUV;
+out vec2 vUV;
+void main(){
+  vUV = aUV;
+  gl_Position = uMVP * (uModel * vec4(aPos, 1.0));
+}`;
+
+const V3D_FRAG = `#version 300 es
+precision highp float;
+uniform sampler2D uTex;
+uniform float uHasTex;
+in vec2 vUV;
+out vec4 outColor;
+void main(){
+  vec4 t = texture(uTex, vUV);
+  vec3 c = mix(vec3(0.16, 0.18, 0.21), t.rgb, uHasTex);
+  outColor = vec4(c, 1.0);
+}`;
+
+const BG_VERT = `#version 300 es
+precision highp float;
+const vec2 P[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0));
+out vec2 vP;
+void main(){ vP = P[gl_VertexID]; gl_Position = vec4(P[gl_VertexID], 0.9999, 1.0); }`;
+
+const BG_FRAG = `#version 300 es
+precision highp float;
+in vec2 vP;
+out vec4 outColor;
+void main(){
+  float t = clamp(vP.y * 0.5 + 0.5, 0.0, 1.0);
+  vec3 top = vec3(0.086, 0.098, 0.121);
+  vec3 bot = vec3(0.024, 0.027, 0.035);
+  outColor = vec4(mix(bot, top, smoothstep(0.0, 1.0, t)), 1.0);
+}`;
+
+function mkProgram(gl, vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    throw new Error("3D 着色器链接失败：" + gl.getProgramInfoLog(p));
+  }
+  return p;
+}
+
+function init3D() {
+  const host = document.getElementById("v3d");
+  if (!SCENE || !SCENE.url) return;
+  const canvas = document.getElementById("v3dcanvas");
+  let gl;
+  try {
+    /* preserveDrawingBuffer 让 canvas 能被截图/导出（无头验收要用） */
+    gl = canvas.getContext("webgl2", { alpha: false, antialias: true, premultipliedAlpha: false,
+                                       preserveDrawingBuffer: true });
+  } catch (e) { gl = null; }
+  if (!gl) {
+    document.getElementById("v3dnote").textContent =
+      "这台机器的浏览器不支持 WebGL2，3D 预览不可用；切图功能不受影响。";
+    host.classList.remove("off");
+    return;
+  }
+  let g, scene;
+  try {
+    const bin = base64ToBytes(SCENE.url.split(",")[1]);
+    g = parseGLB(bin.buffer);
+    scene = buildScene(gl, g);
+  } catch (e) {
+    document.getElementById("v3dnote").textContent = "3D 场景解析失败（" + e.message + "），切图功能不受影响。";
+    host.classList.remove("off");
+    return;
+  }
+
+  const prog = mkProgram(gl, V3D_VERT, V3D_FRAG);
+  const bgProg = mkProgram(gl, BG_VERT, BG_FRAG);
+  const loc = {
+    mvp: gl.getUniformLocation(prog, "uMVP"),
+    model: gl.getUniformLocation(prog, "uModel"),
+    tex: gl.getUniformLocation(prog, "uTex"),
+    hasTex: gl.getUniformLocation(prog, "uHasTex"),
+    aPos: gl.getAttribLocation(prog, "aPos"),
+    aUV: gl.getAttribLocation(prog, "aUV"),
+    bgVAO: gl.createVertexArray(),
+  };
+
+  V3D.gl = gl;
+  V3D.canvas = canvas;
+  V3D.prog = prog;
+  V3D.bgProg = bgProg;
+  V3D.loc = loc;
+  V3D.scene = scene;
+  V3D.draws = scene.draws;
+  V3D.screens = scene.screens;
+  V3D.cam = scene.cam;
+
+  const box = sceneCenter(scene.draws, true);
+  V3D.center = box;
+  // 观众机位 → 轨道参数（自由视角从这里接手，画面不会跳）
+  const inv = m4invert(scene.cam.matrix);
+  const eye = [inv[12], inv[13], inv[14]];
+  setOrbitFromEye(eye, box.ctr);
+
+  // 屏体复选框
+  const wrap = document.getElementById("v3dscreens");
+  for (const sc of SCREENS) {
+    V3D.visible[sc.name] = true;
+    const lab = document.createElement("label");
+    lab.innerHTML = '<input type="checkbox" checked> <span class="st">' + sc.name + "</span>";
+    const cb = lab.querySelector("input");
+    cb.addEventListener("change", () => { V3D.visible[sc.name] = cb.checked; request3D(); });
+    const focus = document.createElement("button");
+    focus.className = "small";
+    focus.textContent = "看";
+    focus.title = "把镜头对准 " + sc.name + " 屏";
+    focus.style.marginLeft = "2px";
+    focus.addEventListener("click", () => focusScreen(sc.name));
+    wrap.appendChild(lab);
+    wrap.appendChild(focus);
+  }
+
+  V3D.texSize = Math.min(SCENE.texMax || 4096, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  // 还没有切图时屏体用的占位贴图（1x1 深灰）
+  V3D.fallbackTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, V3D.fallbackTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                new Uint8Array([46, 50, 57, 255]));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  V3D.ready = true;
+  host.classList.remove("off");
+  bindControls();
+  resize3D();
+  V3D.refreshTextures();
+  request3D();
+
+  document.getElementById("v3dinfo").textContent =
+    "三角形 " + scene.draws.reduce((a, d) => a + d.buffers.count / 3, 0).toLocaleString()
+    + " ｜ 贴图上限 " + V3D.texSize + "px";
+}
+
+function base64ToBytes(b64) {
+  const s = atob(b64);
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+function setOrbitFromEye(eye, ctr) {
+  const v = [eye[0] - ctr[0], eye[1] - ctr[1], eye[2] - ctr[2]];
+  const dist = Math.hypot(v[0], v[1], v[2]) || 1;
+  V3D.orbit.dist = dist;
+  V3D.orbit.yaw = Math.atan2(v[0], v[2]);
+  V3D.orbit.pitch = Math.asin(Math.max(-1, Math.min(1, v[1] / dist)));
+  V3D.orbit.target = ctr.slice();
+}
+
+function orbitEye() {
+  const o = V3D.orbit;
+  const cp = Math.cos(o.pitch), sp = Math.sin(o.pitch);
+  return [o.target[0] + Math.sin(o.yaw) * cp * o.dist,
+          o.target[1] + sp * o.dist,
+          o.target[2] + Math.cos(o.yaw) * cp * o.dist];
+}
+
+function viewMatrix() {
+  if (V3D.mode === "audience") {
+    const inv = m4invert(V3D.cam.matrix);
+    return inv || m4lookAt(orbitEye(), V3D.orbit.target, [0, 1, 0]);
+  }
+  return m4lookAt(orbitEye(), V3D.orbit.target, [0, 1, 0]);
+}
+
+function cameraEye() {
+  if (V3D.mode === "audience") {
+    const inv = m4invert(V3D.cam.matrix);
+    return [inv[12], inv[13], inv[14]];
+  }
+  return orbitEye();
+}
+
+/* ---- 贴图：2D 结果 → 降采样 → 上传 ---- */
+function uploadScreenTexture(name) {
+  const gl = V3D.gl;
+  const r = results[name];
+  const slot = V3D.tex[name] || (V3D.tex[name] = { tex: gl.createTexture(), src: null, has: false });
+  if (slot.src === (r ? r.canvas : null)) return;
+  slot.src = r ? r.canvas : null;
+  gl.bindTexture(gl.TEXTURE_2D, slot.tex);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  if (r) {
+    const max = V3D.texSize;
+    const k = Math.min(1, max / Math.max(r.w, r.h));
+    const w = Math.max(1, Math.round(r.w * k)), h = Math.max(1, Math.round(r.h * k));
+    let src = r.canvas;
+    if (w !== r.w || h !== r.h) {
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(r.canvas, 0, 0, w, h);
+      src = c;
+    }
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    slot.has = true;
+    /* 屏体贴图会被大幅缩小（6600 宽的屏在画面上只占几百像素），
+       不生成 mipmap 的话缩小后全是闪烁的噪点。 */
+    gl.generateMipmap(gl.TEXTURE_2D);
+  } else {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                  new Uint8Array([40, 44, 50, 255]));
+    slot.has = false;
+  }
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+                   slot.has ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, slot.has ? gl.LINEAR : gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+}
+
+V3D.refreshTextures = function () {
+  if (!V3D.ready) return;
+  for (const s of Object.keys(V3D.screens)) uploadScreenTexture(s);
+  request3D();
+};
+
+function resize3D() {
+  if (!V3D.ready) return;
+  const c = V3D.canvas;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(320, c.clientWidth), h = Math.max(240, c.clientHeight);
+  const nw = Math.round(w * dpr), nh = Math.round(h * dpr);
+  if (c.width !== nw || c.height !== nh) { c.width = nw; c.height = nh; }
+  request3D();
+}
+
+let rafPending = false;
+function request3D() {
+  if (rafPending || !V3D.ready) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; draw3D(); });
+}
+
+function draw3D() {
+  if (!V3D.ready) return;
+  const gl = V3D.gl, canvas = V3D.canvas;
+  const W = canvas.width, H = canvas.height;
+
+  // 观众机位默认按成片门框 6000×1538 取景（和 Nuke 里的构图完全一致）
+  let vx = 0, vy = 0, vw = W, vh = H;
+  if (V3D.mode === "audience" && V3D.frameOn) {
+    const ar = 6000 / 1538;
+    if (W / H > ar) { vw = Math.round(H * ar); vx = Math.round((W - vw) / 2); }
+    else { vh = Math.round(W / ar); vy = Math.round((H - vh) / 2); }
+  }
+  gl.viewport(0, 0, W, H);
+  gl.disable(gl.DEPTH_TEST);
+  gl.clearColor(0.02, 0.024, 0.03, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(V3D.bgProg);
+  gl.bindVertexArray(V3D.loc.bgVAO);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  gl.viewport(vx, vy, vw, vh);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.disable(gl.CULL_FACE);        // 屏体有双面壳，剔除反而会漏面
+  gl.disable(gl.BLEND);
+  gl.clear(gl.DEPTH_BUFFER_BIT);
+
+  const eye = cameraEye();
+  const dist = Math.hypot(eye[0] - V3D.center.ctr[0], eye[1] - V3D.center.ctr[1], eye[2] - V3D.center.ctr[2]);
+  const rad = V3D.center.rad;
+  let near = (dist - rad) * 0.3;
+  if (!(near > 1e-5)) near = Math.max(1e-5, dist * 0.01);
+  const far = Math.max(near * 1000, (dist + rad) * 4);
+  const P = m4perspective(V3D.cam.yfov, vw / vh, near, far);
+  const V = viewMatrix();
+  const VP = m4mul(P, V);
+
+  gl.useProgram(V3D.prog);
+  gl.uniform1i(V3D.loc.tex, 0);
+  for (const d of V3D.draws) {
+    if (d.screen && V3D.visible[d.screen] === false) continue;
+    const b = d.buffers;
+    gl.bindBuffer(gl.ARRAY_BUFFER, b.pos);
+    gl.enableVertexAttribArray(V3D.loc.aPos);
+    gl.vertexAttribPointer(V3D.loc.aPos, 3, b.posType, b.posNorm, 0, 0);
+    if (b.uv && V3D.loc.aUV >= 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, b.uv);
+      gl.enableVertexAttribArray(V3D.loc.aUV);
+      gl.vertexAttribPointer(V3D.loc.aUV, 2, b.uvType, b.uvNorm, 0, 0);
+    } else if (V3D.loc.aUV >= 0) {
+      gl.disableVertexAttribArray(V3D.loc.aUV);
+      gl.vertexAttrib2f(V3D.loc.aUV, 0, 0);
+    }
+    const slot = d.screen ? V3D.tex[d.screen] : null;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, slot ? slot.tex : V3D.fallbackTex);
+    gl.uniform1f(V3D.loc.hasTex, slot && slot.has ? 1 : 0);
+    gl.uniformMatrix4fv(V3D.loc.model, false, d.matrix);
+    gl.uniformMatrix4fv(V3D.loc.mvp, false, VP);
+    if (b.idx) {
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.idx);
+      gl.drawElements(gl.TRIANGLES, b.count, b.type, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    } else {
+      gl.drawArrays(gl.TRIANGLES, 0, b.count);
+    }
+  }
+}
+
+function focusScreen(name) {
+  if (!V3D.ready) return;
+  const d = V3D.draws[V3D.screens[name]];
+  if (!d) return;
+  // 取该屏世界包围盒的中心与半径，把镜头推过去
+  const M = d.matrix;
+  const min = [1e9, 1e9, 1e9], max = [-1e9, -1e9, -1e9];
+  for (let i = 0; i < 8; i++) {
+    const p = [(i & 1) ? d.bbox.max[0] : d.bbox.min[0],
+               (i & 2) ? d.bbox.max[1] : d.bbox.min[1],
+               (i & 4) ? d.bbox.max[2] : d.bbox.min[2]];
+    const w = [M[0]*p[0] + M[4]*p[1] + M[8]*p[2] + M[12],
+               M[1]*p[0] + M[5]*p[1] + M[9]*p[2] + M[13],
+               M[2]*p[0] + M[6]*p[1] + M[10]*p[2] + M[14]];
+    for (let c = 0; c < 3; c++) { min[c] = Math.min(min[c], w[c]); max[c] = Math.max(max[c], w[c]); }
+  }
+  const ctr = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
+  const rad = 0.5 * Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+  const dir = [Math.sin(V3D.orbit.yaw) * Math.cos(V3D.orbit.pitch),
+               Math.sin(V3D.orbit.pitch),
+               Math.cos(V3D.orbit.yaw) * Math.cos(V3D.orbit.pitch)];
+  V3D.orbit.target = ctr;
+  V3D.orbit.dist = Math.max(rad * 2.4, 1e-4);
+  V3D.mode = "free";
+  syncMode();
+  request3D();
+}
+
+function syncMode() {
+  const aud = V3D.mode === "audience";
+  document.getElementById("v3dAudience").classList.toggle("on", aud);
+  document.getElementById("v3dFrame").disabled = !aud;
+  const eye = cameraEye();
+  document.getElementById("v3dhint").textContent = (aud ? "观众机位（与成片构图一致）" : "自由视角")
+    + "　左键拖=环绕　右键/中键拖=平移　滚轮=缩放";
+}
+
+function bindControls() {
+  const c = V3D.canvas;
+  let drag = null;
+  c.addEventListener("contextmenu", (e) => e.preventDefault());
+  c.addEventListener("pointerdown", (e) => {
+    c.setPointerCapture(e.pointerId);
+    c.classList.add("drag");
+    drag = { x: e.clientX, y: e.clientY, btn: e.button, shift: e.shiftKey || e.ctrlKey };
+    if (V3D.mode === "audience") {
+      // 从观众机位接手时，把轨道参数对齐到当前相机，避免跳
+      const eye = cameraEye();
+      setOrbitFromEye(eye, V3D.orbit.target);
+      V3D.mode = "free";
+      V3D.spin = false;
+      document.getElementById("v3dSpin").classList.remove("on");
+      syncMode();
+    }
+  });
+  const end = (e) => {
+    if (!drag) return;
+    drag = null;
+    c.classList.remove("drag");
+    try { c.releasePointerCapture(e.pointerId); } catch (_) {}
+  };
+  c.addEventListener("pointerup", end);
+  c.addEventListener("pointercancel", end);
+  c.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    const pan = drag.btn === 2 || drag.btn === 1 || drag.shift;
+    const o = V3D.orbit;
+    if (pan) {
+      const eye = orbitEye();
+      let fwd = [o.target[0] - eye[0], o.target[1] - eye[1], o.target[2] - eye[2]];
+      const fl = Math.hypot(fwd[0], fwd[1], fwd[2]) || 1;
+      fwd = [fwd[0] / fl, fwd[1] / fl, fwd[2] / fl];
+      let right = [fwd[2], 0, -fwd[0]];
+      const rl = Math.hypot(right[0], right[1], right[2]) || 1;
+      right = [right[0] / rl, right[1] / rl, right[2] / rl];
+      const up = [right[1] * fwd[2] - right[2] * fwd[1],
+                  right[2] * fwd[0] - right[0] * fwd[2],
+                  right[0] * fwd[1] - right[1] * fwd[0]];
+      const k = o.dist * 0.0016;
+      for (let i = 0; i < 3; i++) o.target[i] += (-dx * right[i] + dy * up[i]) * k;
+    } else {
+      o.yaw -= dx * 0.006;
+      o.pitch = Math.max(-1.45, Math.min(1.45, o.pitch + dy * 0.006));
+      V3D.spin = false;
+      document.getElementById("v3dSpin").classList.remove("on");
+    }
+    request3D();
+  });
+  c.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const o = V3D.orbit;
+    o.dist = Math.max(V3D.center.rad * 0.05, o.dist * Math.exp(e.deltaY * 0.0012));
+    request3D();
+  }, { passive: false });
+
+  document.getElementById("v3dAudience").addEventListener("click", () => {
+    V3D.mode = "audience";
+    V3D.spin = false;
+    document.getElementById("v3dSpin").classList.remove("on");
+    syncMode();
+    request3D();
+  });
+  document.getElementById("v3dSpin").addEventListener("click", (e) => {
+    V3D.spin = !V3D.spin;
+    e.target.classList.toggle("on", V3D.spin);
+    if (V3D.spin) {
+      if (V3D.mode === "audience") { setOrbitFromEye(cameraEye(), V3D.center.ctr); V3D.mode = "free"; }
+      // 环绕展示默认退到能看全场景的位置，否则会钻进场地内部
+      V3D.orbit.dist = Math.max(V3D.orbit.dist, V3D.center.rad * 2.3);
+      V3D.orbit.pitch = Math.max(V3D.orbit.pitch, 0.25);
+      syncMode();
+      spinLoop();
+    }
+  });
+  document.getElementById("v3dReset").addEventListener("click", () => {
+    V3D.mode = "audience";
+    V3D.spin = false;
+    document.getElementById("v3dSpin").classList.remove("on");
+    setOrbitFromEye(cameraEye(), V3D.center.ctr);
+    syncMode();
+    request3D();
+  });
+  document.getElementById("v3dFull").addEventListener("click", () => {
+    const host = document.getElementById("v3d");
+    if (!document.fullscreenElement) {
+      (host.requestFullscreen ? host.requestFullscreen() : Promise.reject()).catch(() => {});
+    } else {
+      document.exitFullscreen();
+    }
+  });
+  document.getElementById("v3dFrame").addEventListener("change", (e) => {
+    V3D.frameOn = e.target.checked;
+    request3D();
+  });
+  document.addEventListener("fullscreenchange", () => setTimeout(resize3D, 60));
+  window.addEventListener("resize", () => resize3D());
+}
+
+function spinLoop() {
+  if (!V3D.spin) { request3D(); return; }
+  V3D.orbit.yaw += 0.0035;
+  request3D();
+  setTimeout(spinLoop, 16);
+}
+
+/* ---------------- 启动 ---------------- */
+
+ensureAssets().catch(() => {});
+if (SCENE) {
+  try { init3D(); } catch (e) {
+    const host = document.getElementById("v3d");
+    if (host) {
+      host.classList.remove("off");
+      document.getElementById("v3dnote").textContent = "3D 预览初始化失败（" + e.message + "），切图功能不受影响。";
+    }
+  }
+}
+</script>
+</body>
+</html>

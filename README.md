@@ -11,11 +11,13 @@
 | --- | --- |
 | `skill/remap-split-web/` | **技能本体**。装到 `~/.codex/skills/` 后，下次说"把这套切分流程做成网页工具"就会自动匹配。 |
 | `docs/Nuke切屏方案说明.md` | 中文使用说明（配 Nuke 界面截图）：怎么烤坐标图、怎么在 Nuke 里切屏。 |
-| `docs/images/` | 说明书里的 4 张截图。 |
+| `docs/3D预览方案说明.md` | 网页工具 **2.0 的 3D 预览**怎么做：数值标定、模型精简、网页侧要点与验收门槛（配界面截图）。 |
+| `docs/images/` | 说明书与 3D 方案里的截图。 |
 | `examples/nuke/` | 两个 Nuke 工程：`Scenes_Final_v02.nk`（生成素材）、`Scenes_Final_v02_spilp.nk`（2D 切屏）。 |
 | `examples/uv/` | 烤好的坐标图（16-bit PNG，R=u、G=v、A=覆盖率）。 |
-| `examples/web/` | 成品单文件网页，双击即用（上传一张图 → 出四张 PNG）。 |
-| `examples/pipeline/` | 三套案例脚本：网页版（`qieping_uv2d`）、Nuke 2D 版（`qieping_nuke2d`）、初版 3D 烤图版（`qieping_web`）。 |
+| `examples/scene/` | 精简后的现场屏体模型 `scene.glb`（4.95 MB → 0.82 MB，含观众相机与四块屏）。 |
+| `examples/web/` | 成品单文件网页，双击即用：1.0（只出图）与 **2.0（出图 + 3D 预览）**。 |
+| `examples/pipeline/` | 四套案例脚本：网页版（`qieping_uv2d`）、3D 预览版（`qieping_3d`）、Nuke 2D 版（`qieping_nuke2d`）、初版 3D 烤图版（`qieping_web`）。 |
 
 ## 快速上手
 
@@ -24,6 +26,11 @@
 双击 `examples/web/QiePing_UV2D_LangJiu_1014_ABCD.html`（需要较新版 Edge / Chrome，WebGL2）。
 拖一张画面进去、点「生成成片」，四张图就出来了；点图片可放大到 1:1 看细节。
 完全离线，不联网、不上传、不需要 Nuke。
+
+想连"贴到真实屏体上是什么样"一起看，双击 **`examples/web/QiePing_3D_LangJiu_1014_ABCD.html`**（2.0）：
+出图之后下面的 3D 视口会自动把四张图贴到屏体模型上，默认为**观众机位**
+（和现场看到的构图一致），也可以环绕、缩放、单屏显隐。做法与验收见
+`docs/3D预览方案说明.md`。
 
 > 如果点「选择文件…」没弹选择框，多半是文件被塞在某个软件的预览窗口里打开的
 > （那种窗口常常禁用系统文件框）。用系统的 Edge / Chrome 直接打开即可；
@@ -80,6 +87,11 @@ python skill/remap-split-web/scripts/browser_test.py --mode file \
 另外还有三条同样重要：**不要用 alpha 通道装数据**（浏览器会预乘掉）、
 **v 轴原点在左下而贴图 v=0 在顶部**（要写 `1 - v`）、**插值必须在线性空间做**。
 细节见 `skill/remap-split-web/references/`。
+
+**2.0 的 3D 预览同样是"先算清楚再写代码"**：先证明模型的 UV 就是切图的像素栅格
+（实测逐顶点平均误差 0.4–0.7 px / 6000 帧），再用 CPU 光栅化做一份黄金对照，
+最后才让 WebGL 去比。判定 3D 不能用逐像素误差，要用"降采样后的结构比对 + 重建 vs 原图 +
+素材上下翻转的敏感度对照"。细节见 `docs/3D预览方案说明.md`。
 
 ## 环境要求
 

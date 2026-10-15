@@ -15,3 +15,5 @@ examples/pipeline/qieping_web/bake/assets/grid_?.png
 
 # 已发布的 zip 包（重新打包即可）
 examples/pipeline/qieping_web/*.zip
+examples/pipeline/qieping_3d/_verify/
+examples/web/*.zip

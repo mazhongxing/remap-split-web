@@ -54,6 +54,10 @@ python scripts/browser_test_v2.py --tool <html> --art <素材> --ref2d <成片�
 （GPU 与 CPU 采样方式不同，高频素材上能差 30/255），用**降 8 倍的结构比对 + 重建 vs 原图 +
 素材上下翻转的敏感度对照**；屏体自发光、关背面剔除、贴图要生成 mipmap。
 
+要连"模型是怎么来的"一起交付（工程 + 资产进版本库），用 `scripts/inspect_hip.py`
+看清依赖、`scripts/relink_hip_assets.py` 把绝对路径改成 `$HIP` 相对路径，
+再用 `scripts/run_rop.py` 从整理后的工程重导一次——**输出应与原文件逐字节一致**。
+
 细节、数据契约与踩过的坑见 [references/3d-viewport.md](references/3d-viewport.md)。
 
 ## 四条必须守住的不变式

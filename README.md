@@ -15,6 +15,7 @@
 | `docs/images/` | 说明书与 3D 方案里的截图。 |
 | `examples/nuke/` | 两个 Nuke 工程：`Scenes_Final_v02.nk`（生成素材）、`Scenes_Final_v02_spilp.nk`（2D 切屏）。 |
 | `examples/uv/` | 烤好的坐标图（16-bit PNG，R=u、G=v、A=覆盖率）。 |
+| `examples/houdini/` | **做出屏体模型的 Houdini 工程** + 它用到的全部现场资产（FBX/ABC）+ 导出的 GLB；另带两个工具：`inspect_hip.py`（列出工程依赖）、`relink_hip_assets.py`（把绝对路径改成 `$HIP` 相对路径）。 |
 | `examples/scene/` | 精简后的现场屏体模型 `scene.glb`（4.95 MB → 0.82 MB，含观众相机与四块屏）。 |
 | `examples/web/` | 成品单文件网页，双击即用：1.0（只出图）与 **2.0（出图 + 3D 预览）**。 |
 | `examples/pipeline/` | 四套案例脚本：网页版（`qieping_uv2d`）、3D 预览版（`qieping_3d`）、Nuke 2D 版（`qieping_nuke2d`）、初版 3D 烤图版（`qieping_web`）。 |
@@ -36,7 +37,23 @@
 > （那种窗口常常禁用系统文件框）。用系统的 Edge / Chrome 直接打开即可；
 > 拖拽和 Ctrl+V 粘贴不受影响。
 
-### 2. 装技能
+### 2. 看 / 改生成 GLB 的 Houdini 工程
+
+`examples/houdini/` 里放的是 3D 预览用的屏体模型是怎么来的：工程本体
+（`web_make_ass_v010_relinked.hip`，路径已改成 `$HIP` 相对，克隆下来直接能打开）、
+它引用的全部现场资产（5 个 FBX + 1 个 ABC，共 3.1 MB），以及导出的
+`GLB/Scenes_v011.glb`。
+
+```bash
+hython examples/houdini/inspect_hip.py examples/houdini/web_make_ass_v010_relinked.hip
+hython examples/houdini/run_rop.py     examples/houdini/web_make_ass_v010_relinked.hip /out/gltf1
+```
+
+用这个工程重导一次，得到的 GLB 与 W 盘上那份原始文件 **SHA256 完全相同**，
+所以整条链（现场资产 → Houdini → GLB → 精简 → 网页）在仓库里是完整可复现的。
+细节见 `examples/houdini/README.md`。
+
+### 3. 装技能
 
 把 `skill/remap-split-web/` 整个目录拷到：
 
@@ -47,7 +64,7 @@
 之后在 Codex 里说"用 remap-split-web 把这套切分做成网页工具"即可。
 技能里带全部脚本与网页模板，见 `skill/remap-split-web/SKILL.md`。
 
-### 3. 从零复现（不需要原始工程）
+### 4. 从零复现（不需要原始工程）
 
 仓库里带了烤好的 16-bit 坐标图，所以**不依赖原始 3D 工程**也能跑通整条链：
 
@@ -102,7 +119,8 @@ python skill/remap-split-web/scripts/browser_test.py --mode file \
 ## 版权说明
 
 * **代码与技能文档**：MIT，见 `LICENSE`。
-* **案例素材**（`examples/` 下的 Nuke 工程、坐标图、成片、截图）：来自真实商业项目，
+* **案例素材**（`examples/` 下的 Nuke 工程、Houdini 工程与 `WP/` 里的 FBX/ABC、
+  坐标图、成片、截图）：来自真实商业项目，
   **版权归原客户所有，仅作技术演示**，请勿用于生产或再分发。
   演示画面的设计版权同样归原客户。
 

@@ -44,13 +44,16 @@ qieping_3d\                        （本仓库里的 examples/pipeline/qieping_
 
 ## 重新构建
 
-本仓库里带了转换好的 `examples/scene/scene.glb`，所以不依赖原始 GLB 也能跑：
+本仓库里带了生成 GLB 的 Houdini 工程与全部现场资产（`examples/houdini/`），
+也带了转换好的 `examples/scene/scene.glb`，所以不依赖原始工程也能跑：
 
 ```bash
 SET=examples/pipeline/qieping_uv2d/sets/LangJiu_1014_ABCD
 
-# ① 场景：换机位/屏体时才需要重跑（源 GLB 只读）
-python examples/pipeline/qieping_3d/glb_web.py examples/scene/scene.glb --out /tmp/scene --set $SET
+# ① 场景（换机位/屏体时才需要重跑）。
+#    想从现场资产重来一遍，先用 Houdini 导出 GLB：
+#    hython examples/houdini/run_rop.py examples/houdini/web_make_ass_v010_relinked.hip /out/gltf1
+python examples/pipeline/qieping_3d/glb_web.py examples/houdini/GLB/Scenes_v011.glb --out /tmp/scene --set $SET
 
 # ② 出网页（2D 素材从 1.0 的 sets 目录只读读取）
 python examples/pipeline/qieping_3d/build_page_v2.py $SET /tmp/scene /tmp/out.html

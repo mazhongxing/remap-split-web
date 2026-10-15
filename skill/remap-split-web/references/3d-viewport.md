@@ -30,6 +30,12 @@ FOV 与画幅比要一起定：用 `yfov` 作**垂直**视角、画幅比取成�
 
 导出器常留下**场景外孤立节点**（重复的网格、多余的相机），先剔掉再量化：
 
+> 模型一般是从 DCC（Houdini/Blender/Maya）导出来的。**要连"模型是怎么来的"一起交付**时，
+> 把工程和它引用的资产也放进仓库，并把工程里的绝对路径改成 `$HIP` 相对路径——
+> 这两个脚本可直接复用：`scripts/inspect_hip.py`（列出节点树与全部资产引用、标出缺失）、
+> `scripts/relink_hip_assets.py`（改写引用并回读校验）、`scripts/run_rop.py`（命令行重导）。
+> 验收标准很简单：**从整理后的工程重导一次，输出与原始文件逐字节一致**。
+
 ```bash
 python scripts/glb_web.py <场景.glb> --out scene --set <集合目录>
 ```

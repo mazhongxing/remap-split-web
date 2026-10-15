@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>切屏出图工具 · A / B / D / F</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --line: #e2e5ea;
+    --ink: #1c2024;
+    --muted: #6b7480;
+    --accent: #2f6bff;
+    --ok: #1f9d55;
+    --warn: #b7791f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    padding: 22px 28px 16px; background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+  h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: .2px; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  main { padding: 20px 28px 60px; max-width: 1500px; }
+  .bar {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 18px;
+  }
+  .drop {
+    flex: 1 1 320px; min-height: 92px; border: 1.5px dashed #c3cad4; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    color: var(--muted); cursor: pointer; padding: 12px; background: #fbfcfd;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: #f2f6ff; color: var(--accent); }
+  .drop.has { border-style: solid; border-color: var(--line); background: #fff; color: var(--ink); padding: 8px; }
+  .drop img { max-height: 132px; max-width: 100%; display: block; border-radius: 4px; }
+  .fields { display: flex; flex-direction: column; gap: 8px; }
+  label.f { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  input[type=text] {
+    border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px;
+    font: inherit; width: 210px; background: #fff;
+  }
+  button {
+    font: inherit; border-radius: 7px; border: 1px solid var(--line);
+    background: #fff; padding: 8px 14px; cursor: pointer;
+  }
+  button:hover { border-color: #b9c2cf; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:disabled { opacity: .45; cursor: default; }
+  button.small { padding: 5px 10px; font-size: 12.5px; }
+  #status { font-size: 13px; color: var(--muted); min-height: 20px; margin-bottom: 14px; }
+  #status.err { color: #c0392b; }
+  #status.ok { color: var(--ok); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card .head {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card .tag {
+    font-weight: 700; font-size: 15px; width: 22px; text-align: center;
+  }
+  .card .dim { color: var(--muted); font-size: 12.5px; }
+  .card .spacer { flex: 1; }
+  .card .shot { background: #101214; display: flex; align-items: center; justify-content: center; }
+  .card .shot img { max-width: 100%; max-height: 340px; display: block; }
+  .card .ph { color: #5b646f; font-size: 12.5px; padding: 46px 0; }
+  .note { margin-top: 22px; color: var(--muted); font-size: 12.5px; }
+  .note code { background: #eceff3; padding: 1px 5px; border-radius: 4px; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 20px; background: #eef1f5; color: var(--muted); }
+  .pill.warn { background: #fdf3e2; color: var(--warn); }
+</style>
+</head>
+<body>
+<header>
+  <h1>切屏出图工具 · A / B / D / F</h1>
+  <p>上传一张整幅画面，本地直接算出四块屏各自的成片。全部计算在这台电脑的浏览器里完成，不上传、不联网、不需要 Nuke。</p>
+</header>
+<main>
+  <div class="bar">
+    <div class="drop" id="drop">
+      <div id="dropHint">把画面拖进来、点这里选文件，或按 <b>Ctrl+V</b> 粘贴<br><span style="font-size:12px">建议 6000 × 1538（与现网素材一致）；其它尺寸也能用，会整幅拉伸</span></div>
+    </div>
+    <div class="fields">
+      <label class="f">输出文件名前缀
+        <input type="text" id="prefix" value="QiePing" spellcheck="false">
+      </label>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="pick">选择文件…</button>
+        <button class="primary" id="run" disabled>生成 A / B / D / F</button>
+        <button id="zip" disabled>打包下载 ZIP</button>
+      </div>
+    </div>
+  </div>
+  <div id="status">等待选择画面。</div>
+  <div class="grid" id="grid"></div>
+  <p class="note">
+    出图规格固定为现网四块屏的像素尺寸：A 6600×1700、B 6600×1580、D 3400×1300、F 3750×750，
+    8-bit sRGB PNG、黑底。未覆盖的区域为纯黑。机位与屏体是固定的，换新的机位需要重新烤一次映射表。
+  </p>
+</main>
+<script>
+"use strict";
+
+/* 由 build_page.py 注入：每块屏的输出尺寸、网格尺寸，以及网格/遮罩的 PNG data URL */
+const ASSETS = /*__ASSET_DATA__*/{};
+
+const SCREEN_ORDER = ["A", "B", "D", "F"];
+const ART_W = 6000, ART_H = 1538;
+
+const els = {
+  drop: document.getElementById("drop"),
+  dropHint: document.getElementById("dropHint"),
+  prefix: document.getElementById("prefix"),
+  fileInput: document.getElementById("fileInput"),
+  pick: document.getElementById("pick"),
+  run: document.getElementById("run"),
+  zip: document.getElementById("zip"),
+  status: document.getElementById("status"),
+  grid: document.getElementById("grid"),
+};
+
+let artBitmap = null;
+let results = {};       // screen -> {blob, url, w, h}
+let busy = false;
+
+/* ---------------- 页面骨架 ---------------- */
+
+const panels = {};
+for (const s of SCREEN_ORDER) {
+  const a = ASSETS[s];
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    '<div class="head"><span class="tag">' + s + '</span>' +
+    '<span class="dim">' + a.out[0] + " × " + a.out[1] + '</span>' +
+    '<span class="spacer"></span>' +
+    '<button class="small dl" disabled>下载 PNG</button></div>' +
+    '<div class="shot"><div class="ph">尚未生成</div></div>';
+  els.grid.appendChild(card);
+  panels[s] = {
+    card,
+    shot: card.querySelector(".shot"),
+    dl: card.querySelector(".dl"),
+  };
+  panels[s].dl.addEventListener("click", () => downloadOne(s));
+}
+
+function setStatus(text, cls) {
+  els.status.textContent = text;
+  els.status.className = cls || "";
+}
+
+/* ---------------- 载入素材 ---------------- */
+
+/* 用 <img> 而不是 fetch：双击打开（file://）时 fetch 一个 data: URL 不一定被允许 */
+function loadBitmap(url, opts) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => createImageBitmap(img, opts || {}).then(resolve, reject);
+    img.onerror = () => reject(new Error("内置映射素材载入失败"));
+    img.src = url;
+  });
+}
+
+let bitmapCache = null;
+function ensureAssets() {
+  if (bitmapCache) return bitmapCache;
+  const jobs = [];
+  const dataOpts = { premultiplyAlpha: "none", colorSpaceConversion: "none" };
+  for (const s of SCREEN_ORDER) {
+    const a = ASSETS[s];
+    jobs.push(loadBitmap(a.gridUUrl, dataOpts).then((b) => { a.gridUBmp = b; }));
+    jobs.push(loadBitmap(a.gridVUrl, dataOpts).then((b) => { a.gridVBmp = b; }));
+    jobs.push(loadBitmap(a.maskUrl, dataOpts).then((b) => { a.maskBmp = b; }));
+  }
+  bitmapCache = Promise.all(jobs).then(() => true);
+  return bitmapCache;
+}
+
+/* ---------------- 选图 ---------------- */
+
+/* 文件框必须是真的挂在页面上的 <input>：临时 new 一个再 click()，
+   新版 Chrome/Edge（以及一些内嵌预览窗口）会直接忽略，表现就是"点了没反应"。 */
+function openPicker() {
+  els.fileInput.click();
+}
+
+els.drop.addEventListener("click", openPicker);
+els.pick.addEventListener("click", openPicker);
+
+els.fileInput.addEventListener("change", () => {
+  const f = els.fileInput.files && els.fileInput.files[0];
+  els.fileInput.value = "";      // 清掉，方便同一张图再选一次
+  if (f) takeFile(f);
+});
+
+/* 额外给一条路：直接 Ctrl+V 粘贴截图/图片 */
+document.addEventListener("paste", (e) => {
+  const items = (e.clipboardData && e.clipboardData.files) || [];
+  if (items.length) {
+    e.preventDefault();
+    takeFile(items[0]);
+  }
+});
+
+["dragenter", "dragover"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.remove("over"); }));
+els.drop.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) takeFile(f);
+});
+
+function takeFile(file) {
+  if (!/^image\//.test(file.type)) { setStatus("这个文件不是图片。", "err"); return; }
+  createImageBitmap(file, { colorSpaceConversion: "none", premultiplyAlpha: "none" })
+    .then((bmp) => {
+      if (artBitmap && artBitmap.close) artBitmap.close();
+      artBitmap = bmp;
+      els.drop.classList.add("has");
+      const url = URL.createObjectURL(file);
+      els.drop.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = url;
+      els.drop.appendChild(img);
+      const ar = (bmp.width / bmp.height);
+      const want = ART_W / ART_H;
+      let extra = "";
+      if (Math.abs(ar - want) / want > 0.01) {
+        extra = " 　（当前宽高比 " + ar.toFixed(3) + "，与标准 " + want.toFixed(3) + " 不一致，会整幅拉伸）";
+      }
+      setStatus("已载入 " + bmp.width + " × " + bmp.height + "。" + extra);
+      els.run.disabled = false;
+      els.zip.disabled = true;
+      clearResults();
+    })
+    .catch((e) => setStatus("读图失败：" + e.message, "err"));
+}
+
+function clearResults() {
+  results = {};
+  for (const s of SCREEN_ORDER) {
+    panels[s].shot.innerHTML = '<div class="ph">尚未生成</div>';
+    panels[s].dl.disabled = true;
+  }
+}
+
+/* ---------------- WebGL 重采样 ---------------- */
+
+const VERT = `#version 300 es
+precision highp float;
+const vec2 P[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0));
+void main(){ gl_Position = vec4(P[gl_VertexID], 0.0, 1.0); }
+`;
+
+const FRAG = `#version 300 es
+precision highp float;
+precision highp sampler2D;
+
+uniform sampler2D uGridU;
+uniform sampler2D uGridV;
+uniform sampler2D uMask;
+uniform sampler2D uArt;
+uniform vec2 uGridSize;
+uniform vec2 uPadSize;
+uniform vec2 uOutSize;
+uniform vec2 uArtSize;
+out vec4 outColor;
+
+float srgbToLin(float c){
+  return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
+}
+float linToSrgb(float c){
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * pow(c, 1.0/2.4) - 0.055;
+}
+vec3 fetchLin(ivec2 c){
+  ivec2 m = ivec2(uArtSize) - 1;
+  vec3 s = texelFetch(uArt, clamp(c, ivec2(0), m), 0).rgb;
+  return vec3(srgbToLin(s.r), srgbToLin(s.g), srgbToLin(s.b));
+}
+// 网格是按 高/低 两个字节分开存的，必须自己取 4 个格子、拆成 16-bit 之后再插值。
+// 交给硬件插值的话它只按字节插，高低位之间的进位会被放大成肉眼可见的错位。
+float grid16(sampler2D tex, ivec2 c){
+  vec3 t = texelFetch(tex, c, 0).rgb;
+  return floor(t.r * 255.0 + 0.5) * 256.0 + floor(t.g * 255.0 + 0.5);
+}
+float gridAt(sampler2D tex, vec2 gt, ivec2 m){
+  vec2 i0f = floor(gt);
+  vec2 f = gt - i0f;
+  ivec2 i0 = clamp(ivec2(i0f), ivec2(0), m);
+  ivec2 i1 = clamp(ivec2(i0f) + ivec2(1, 0), ivec2(0), m);
+  ivec2 i2 = clamp(ivec2(i0f) + ivec2(0, 1), ivec2(0), m);
+  ivec2 i3 = clamp(ivec2(i0f) + ivec2(1, 1), ivec2(0), m);
+  float a0 = grid16(tex, i0), a1 = grid16(tex, i1);
+  float a2 = grid16(tex, i2), a3 = grid16(tex, i3);
+  return mix(mix(a0, a1, f.x), mix(a2, a3, f.x), f.y);
+}
+
+void main(){
+  // 帧缓冲的 y 向上，图片行号向下，这里翻一次让两边对齐
+  vec2 fc = vec2(gl_FragCoord.x, uOutSize.y - gl_FragCoord.y);
+
+  // 1) 查网格：1/8 分辨率的素材坐标（16-bit 拆成两个 8-bit 通道存）
+  vec2 gt = fc / uPadSize * uGridSize - 0.5;
+  ivec2 gm = ivec2(uGridSize) - 1;
+  vec2 uv = vec2(gridAt(uGridU, gt, gm), gridAt(uGridV, gt, gm)) / 65535.0;
+
+  // 2) 在线性空间对素材做双线性采样（原工程也是线性空间渲染）
+  vec2 px = clamp(uv * uArtSize - 0.5, vec2(0.0), uArtSize - 1.0);
+  vec2 i0f = floor(px);
+  vec2 fr = px - i0f;
+  ivec2 i0 = ivec2(i0f);
+  vec3 c00 = fetchLin(i0);
+  vec3 c10 = fetchLin(i0 + ivec2(1, 0));
+  vec3 c01 = fetchLin(i0 + ivec2(0, 1));
+  vec3 c11 = fetchLin(i0 + ivec2(1, 1));
+  vec3 col = mix(mix(c00, c10, fr.x), mix(c01, c11, fr.x), fr.y);
+
+  // 3) 乘覆盖度（遮罩自带抗锯齿）
+  float cover = texture(uMask, fc / uOutSize).r;
+  col *= cover;
+
+  outColor = vec4(linToSrgb(col.r), linToSrgb(col.g), linToSrgb(col.b), 1.0);
+}
+`;
+
+function compile(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    throw new Error("着色器编译失败：" + gl.getShaderInfoLog(sh));
+  }
+  return sh;
+}
+
+function makeTex(gl, bitmap, linear) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, linear ? gl.LINEAR : gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, linear ? gl.LINEAR : gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+function renderScreen(screen) {
+  const a = ASSETS[screen];
+  const [W, H] = a.out;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const gl = canvas.getContext("webgl2", { alpha: false, antialias: false, preserveDrawingBuffer: true });
+  if (!gl) throw new Error("这个浏览器不支持 WebGL2，请用较新的 Edge / Chrome 打开。");
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    throw new Error("着色器链接失败：" + gl.getProgramInfoLog(prog));
+  }
+  gl.useProgram(prog);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const gridUTex = makeTex(gl, a.gridUBmp, true);
+  const gridVTex = makeTex(gl, a.gridVBmp, true);
+  const maskTex = makeTex(gl, a.maskBmp, true);
+  const artTex = makeTex(gl, artBitmap, false);   // 手动做双线性，纹理本身用 NEAREST
+
+  gl.uniform1i(gl.getUniformLocation(prog, "uGridU"), 0);
+  gl.uniform1i(gl.getUniformLocation(prog, "uGridV"), 1);
+  gl.uniform1i(gl.getUniformLocation(prog, "uMask"), 2);
+  gl.uniform1i(gl.getUniformLocation(prog, "uArt"), 3);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gridUTex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, gridVTex);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, maskTex);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, artTex);
+
+  gl.uniform2f(gl.getUniformLocation(prog, "uGridSize"), a.gridSize[0], a.gridSize[1]);
+  gl.uniform2f(gl.getUniformLocation(prog, "uPadSize"), a.pad[0], a.pad[1]);
+  gl.uniform2f(gl.getUniformLocation(prog, "uOutSize"), W, H);
+  gl.uniform2f(gl.getUniformLocation(prog, "uArtSize"), artBitmap.width, artBitmap.height);
+
+  gl.viewport(0, 0, W, H);
+  gl.disable(gl.BLEND);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  return canvas;
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("导出 PNG 失败"))), "image/png"));
+}
+
+/* ---------------- 生成 ---------------- */
+
+els.run.addEventListener("click", () => {
+  if (!artBitmap || busy) return;
+  busy = true;
+  els.run.disabled = true;
+  els.zip.disabled = true;
+  clearResults();
+  setStatus("正在准备映射表…");
+  ensureAssets()
+    .then(async () => {
+      const t0 = performance.now();
+      for (const s of SCREEN_ORDER) {
+        setStatus("正在生成 " + s + " 屏…");
+        await new Promise((r) => setTimeout(r, 0));
+        const canvas = renderScreen(s);
+        const blob = await canvasToBlob(canvas);
+        const url = URL.createObjectURL(blob);
+        results[s] = { blob, url, w: canvas.width, h: canvas.height };
+        const p = panels[s];
+        p.shot.innerHTML = "";
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = s + " 屏";
+        p.shot.appendChild(img);
+        p.dl.disabled = false;
+      }
+      const dt = ((performance.now() - t0) / 1000).toFixed(2);
+      setStatus("完成，四张图共用了 " + dt + " 秒。可以逐张下载，或打包下载。", "ok");
+      els.zip.disabled = false;
+    })
+    .catch((e) => setStatus("出错：" + e.message, "err"))
+    .finally(() => { busy = false; els.run.disabled = false; });
+});
+
+function fileName(screen, ext) {
+  const p = (els.prefix.value || "QiePing").trim().replace(/[\\/:*?"<>|]/g, "_") || "QiePing";
+  return p + "_" + screen + "." + (ext || "png");
+}
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function downloadOne(screen) {
+  const r = results[screen];
+  if (r) saveBlob(r.blob, fileName(screen, "png"));
+}
+
+/* ---------------- 极简 ZIP（仅存储，不压缩） ---------------- */
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() / 2)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, f.data.length, true);
+    lv.setUint32(22, f.data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    chunks.push(local, f.data);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, f.data.length, true);
+    cv.setUint32(24, f.data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    central.push(cd);
+    offset += local.length + f.data.length;
+  }
+
+  let cdSize = 0;
+  for (const c of central) cdSize += c.length;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+
+  const all = chunks.concat(central, [end]);
+  let total = 0;
+  for (const c of all) total += c.length;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of all) { out.set(c, p); p += c.length; }
+  return new Blob([out], { type: "application/zip" });
+}
+
+els.zip.addEventListener("click", async () => {
+  if (!results.A) return;
+  setStatus("正在打包…");
+  const files = [];
+  for (const s of SCREEN_ORDER) {
+    const r = results[s];
+    files.push({ name: fileName(s, "png"), data: new Uint8Array(await r.blob.arrayBuffer()) });
+  }
+  const p = (els.prefix.value || "QiePing").trim().replace(/[\\/:*?"<>|]/g, "_") || "QiePing";
+  saveBlob(buildZip(files), p + "_ABCD_F.zip");
+  setStatus("已打包下载。", "ok");
+});
+
+/* 预热映射表，免得第一次点生成时等太久 */
+ensureAssets().catch(() => {});
+</script>
+</body>
+</html>

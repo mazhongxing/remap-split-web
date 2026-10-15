@@ -1,0 +1,79 @@
+{
+  "name": "LangJiu_1014_ABCD",
+  "vAxis": "bottom",
+  "cell": 4,
+  "screens": [
+    {
+      "name": "A",
+      "out": [
+        6600,
+        1700
+      ],
+      "grid": [
+        1650,
+        425
+      ],
+      "pad": [
+        6600,
+        1700
+      ],
+      "gridU": "gridU_A.png",
+      "gridV": "gridV_A.png",
+      "mask": "mask_A.png"
+    },
+    {
+      "name": "B",
+      "out": [
+        6600,
+        1580
+      ],
+      "grid": [
+        1650,
+        395
+      ],
+      "pad": [
+        6600,
+        1580
+      ],
+      "gridU": "gridU_B.png",
+      "gridV": "gridV_B.png",
+      "mask": "mask_B.png"
+    },
+    {
+      "name": "D",
+      "out": [
+        3400,
+        1300
+      ],
+      "grid": [
+        850,
+        325
+      ],
+      "pad": [
+        3400,
+        1300
+      ],
+      "gridU": "gridU_D.png",
+      "gridV": "gridV_D.png",
+      "mask": "mask_D.png"
+    },
+    {
+      "name": "F",
+      "out": [
+        3750,
+        750
+      ],
+      "grid": [
+        938,
+        188
+      ],
+      "pad": [
+        3752,
+        752
+      ],
+      "gridU": "gridU_F.png",
+      "gridV": "gridV_F.png",
+      "mask": "mask_F.png"
+    }
+  ]
+}

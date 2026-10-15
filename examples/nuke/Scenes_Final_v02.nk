@@ -1,0 +1,605 @@
+#! C:/Program Files/Nuke14.0v2/nuke-14.0.2.dll -nx
+version 14.0 v2
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="0" w="1917" h="1128" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="1254" stretch="1"/>
+            <splitter orientation="2">
+                <split size="444"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="642"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Nuke/Scenes_Final_v02.nk
+ last_frame 480
+ lock_range true
+ fps 25
+ format "6000 1538 0 0 6000 1538 1 "
+ proxy true
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ monitorOutLUT rec709
+ int8Lut sRGB
+ int16Lut sRGB
+ logLut Cineon
+ floatLut linear
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode1
+ tile_color 0x8e388e00
+ label 切屏素材
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 2297
+ ypos 472
+ bdwidth 769
+ bdheight 362
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode2
+ tile_color 0x388e8e00
+ label 切屏设置
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 2291
+ ypos 1036
+ bdwidth 2105
+ bdheight 1187
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode3
+ tile_color 0xff5f00ff
+ label A屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 2747
+ ypos 2425
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode4
+ tile_color 0xff00bfff
+ label B屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 3097
+ ypos 2425
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode5
+ tile_color 0xffbf00ff
+ label D屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 3403
+ ypos 2424
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode6
+ tile_color 0x7f00ffff
+ label F屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 3681
+ ypos 2423
+ bdwidth 192
+ bdheight 455
+}
+Camera3 {
+ inputs 0
+ rot_order XYZ
+ translate {-6.03 3.4 70.75}
+ rotate {6 0 0}
+ scaling {1 1 1}
+ focal 35
+ haperture 52
+ vaperture 13.32499981
+ near 0.001000000047
+ focal_point 5
+ fstop 5.599999905
+ read_from_file true
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/Came_new_V01.abc
+ version 6
+ name Camera16
+ xpos 2456
+ ypos 1368
+}
+Dot {
+ name Dot20
+ xpos 2480
+ ypos 1489
+}
+set Nbe791c00 [stack 0]
+Dot {
+ name Dot21
+ xpos 2733
+ ypos 1489
+ hide_input true
+}
+Read {
+ inputs 0
+ file_type jpeg
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingSuCai/1004/C/###.jpg
+ format "6000 1538 0 0 6000 1538 1 "
+ last 4
+ origlast 4
+ origset true
+ name Read8
+ selected true
+ xpos 2603
+ ypos 618
+}
+Group {
+ name UV_Map
+ help "Create an uvmap from the input format or the selected format that can be used for example for baking transformations and applying them through a STmap node.\nUse the overscan to create values outside of the viewing window and the 0-1 range."
+ tile_color 0x578100ff
+ note_font "Bitstream Vera Sans"
+ note_font_color 0xffffffff
+ xpos 2598
+ ypos 754
+ mapsize {0.15 0.15}
+ addUserKnob {20 tab l "UV Map"}
+ addUserKnob {41 format T Constant1.format}
+ addUserKnob {41 scale l overscan T Reformat1.scale}
+ addUserKnob {6 alpha l "alpha 1" +STARTLINE}
+ alpha true
+ addUserKnob {41 black_outside l "black outside" -STARTLINE T Reformat2.black_outside}
+}
+ Input {
+  inputs 0
+  name Input
+  xpos 620
+  ypos -370
+ }
+ Shuffle {
+  red black
+  green black
+  blue black
+  alpha black
+  name Shuffle1
+  xpos 620
+  ypos -309
+ }
+ Constant {
+  inputs 0
+  name Constant1
+  xpos 479
+  ypos -214
+ }
+ Switch {
+  inputs 2
+  which {{"\[exists parent.input0]"}}
+  name Switch1
+  xpos 620
+  ypos -190
+ }
+ Reformat {
+  type scale
+  pbb true
+  name Reformat1
+  xpos 620
+  ypos -71
+ }
+ Reformat {
+  type scale
+  scale {{1/Reformat1.scale} {1/Reformat1.scale}}
+  resize none
+  black_outside true
+  pbb true
+  name Reformat2
+  xpos 620
+  ypos -37
+ }
+ Shuffle {
+  alpha white
+  name Shuffle13
+  tile_color 0xffffff00
+  label "\[value in]"
+  xpos 620
+  ypos 12
+  disable {{!parent.alpha}}
+ }
+ Expression {
+  expr0 (x+0.5)/width
+  expr1 (y+0.5)/height
+  name Expression2
+  xpos 620
+  ypos 75
+ }
+ Output {
+  name Output1
+  xpos 620
+  ypos 127
+ }
+end_group
+Dot {
+ name Dot16
+ xpos 2632
+ ypos 1382
+}
+Dot {
+ name Dot3
+ xpos 2842
+ ypos 1382
+}
+set Nbe7c2c00 [stack 0]
+Project3D2 {
+ inputs 2
+ name Project3D61
+ xpos 2808
+ ypos 1486
+}
+Dot {
+ name Dot1
+ xpos 2842
+ ypos 1593
+}
+set Nbe7c3400 [stack 0]
+ReadGeo2 {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/A/A_ping_A_A.fbx
+ version 25
+ read_on_each_frame true
+ name ReadGeo93
+ xpos 2808
+ ypos 1664
+}
+set Nbe7c3800 [stack 0]
+push 0
+push $Nbe7c3400
+Dot {
+ name Dot2
+ xpos 2983
+ ypos 1593
+}
+ReadGeo2 {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/A/A_ping_C_E.fbx
+ version 9
+ read_on_each_frame true
+ name ReadGeo92
+ xpos 2949
+ ypos 1657
+}
+set Nbe7f8400 [stack 0]
+push $Nbe791c00
+Dot {
+ name Dot22
+ xpos 3119
+ ypos 1543
+ hide_input true
+}
+push $Nbe7c2c00
+Dot {
+ name Dot18
+ xpos 3192
+ ypos 1382
+}
+set Nbe7f9000 [stack 0]
+Project3D2 {
+ inputs 2
+ name Project3D62
+ xpos 3158
+ ypos 1540
+}
+ReadGeo2 {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/B_ping_D.fbx
+ version 7
+ all_objects true
+ read_on_each_frame true
+ name ReadGeo94
+ xpos 3158
+ ypos 1634
+}
+set Nbe7f9800 [stack 0]
+push $Nbe791c00
+Dot {
+ name Dot23
+ xpos 3424
+ ypos 1543
+ hide_input true
+}
+push $Nbe7f9000
+Dot {
+ name Dot17
+ xpos 3493
+ ypos 1382
+}
+set Nbe818400 [stack 0]
+Project3D2 {
+ inputs 2
+ name Project3D63
+ xpos 3459
+ ypos 1540
+}
+ReadGeo2 {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/A/DpingE0102/D_ping_E_v03.fbx
+ version 4
+ all_objects true
+ read_on_each_frame true
+ name ReadGeo95
+ xpos 3459
+ ypos 1623
+}
+set Nbe818c00 [stack 0]
+push $Nbe791c00
+Dot {
+ name Dot24
+ xpos 3684
+ ypos 1538
+ hide_input true
+}
+push $Nbe818400
+Dot {
+ name Dot15
+ xpos 3766
+ ypos 1382
+}
+Project3D2 {
+ inputs 2
+ name Project3D64
+ xpos 3732
+ ypos 1535
+}
+ReadGeo2 {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/HoudiniProjects/newProject/hip/WP/fbx/F_ping_B.fbx
+ version 3
+ all_objects true
+ read_on_each_frame true
+ name ReadGeo96
+ xpos 3732
+ ypos 1621
+}
+set N9dd6000 [stack 0]
+Scene {
+ inputs 6
+ name Scene78
+ xpos 4109
+ ypos 1789
+ hide_input true
+}
+push $Nbe7f8400
+Scene {
+ name Scene93
+ xpos 2959
+ ypos 1790
+}
+push 0
+ScanlineRender {
+ inputs 2
+ conservative_shader_sampling false
+ antialiasing high
+ projection_mode uv
+ motion_vectors_type distance
+ name ScanlineRender92
+ xpos 2949
+ ypos 2027
+}
+push $Nbe7c3800
+Scene {
+ name Scene94
+ xpos 2818
+ ypos 1789
+}
+push 0
+ScanlineRender {
+ inputs 2
+ conservative_shader_sampling false
+ antialiasing high
+ projection_mode uv
+ motion_vectors_type distance
+ name ScanlineRender93
+ xpos 2808
+ ypos 1947
+}
+Merge2 {
+ inputs 2
+ name Merge13
+ xpos 2808
+ ypos 2027
+}
+Reformat {
+ format "6600 1700 0 0 6600 1700 1 A"
+ resize distort
+ name Reformat61
+ xpos 2808
+ ypos 2088
+}
+EdgeExtend {
+ sourceIsPremultiplied true
+ premultiply false
+ name EdgeExtend1
+ xpos 2808
+ ypos 2270
+}
+set N13d32800 [stack 0]
+Viewer {
+ frame 1
+ frame_range 1-480
+ fps 25
+ monitorOutOutputTransform rec709
+ name Viewer1
+ xpos 1569
+ ypos 2626
+}
+push $Nbe7f9800
+Scene {
+ name Scene95
+ xpos 3168
+ ypos 1769
+}
+push 0
+ScanlineRender {
+ inputs 2
+ conservative_shader_sampling false
+ antialiasing high
+ projection_mode uv
+ motion_vectors_type distance
+ name ScanlineRender94
+ xpos 3158
+ ypos 1899
+}
+Reformat {
+ format "6600 1580 0 0 6600 1580 1 B"
+ resize distort
+ name Reformat62
+ xpos 3158
+ ypos 2069
+}
+EdgeExtend {
+ sourceIsPremultiplied true
+ premultiply false
+ name EdgeExtend2
+ xpos 3152
+ ypos 2260
+}
+Write {
+ channels rgba
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_B.png
+ colorspace linear
+ file_type png
+ datatype "16 bit"
+ create_directories true
+ checkHashOnRead false
+ version 32
+ name Write1
+ xpos 3152
+ ypos 2675
+}
+push $Nbe818c00
+Scene {
+ name Scene96
+ xpos 3469
+ ypos 1725
+}
+push 0
+ScanlineRender {
+ inputs 2
+ conservative_shader_sampling false
+ antialiasing high
+ projection_mode uv
+ motion_vectors_type distance
+ name ScanlineRender95
+ xpos 3459
+ ypos 1896
+}
+Reformat {
+ format "3400 1300 0 0 3400 1300 1 D_1"
+ resize distort
+ name Reformat63
+ xpos 3459
+ ypos 2058
+}
+EdgeExtend {
+ sourceIsPremultiplied true
+ premultiply false
+ name EdgeExtend3
+ xpos 3456
+ ypos 2253
+}
+Write {
+ channels rgba
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_D.png
+ colorspace linear
+ file_type png
+ datatype "16 bit"
+ create_directories true
+ checkHashOnRead false
+ version 32
+ name Write2
+ xpos 3456
+ ypos 2679
+}
+push $N13d32800
+Write {
+ channels rgba
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_A.png
+ colorspace linear
+ file_type png
+ datatype "16 bit"
+ create_directories true
+ checkHashOnRead false
+ version 32
+ name Write61
+ xpos 2808
+ ypos 2693
+}
+push $N9dd6000
+Scene {
+ name Scene97
+ xpos 3742
+ ypos 1739
+}
+push 0
+ScanlineRender {
+ inputs 2
+ conservative_shader_sampling false
+ antialiasing high
+ projection_mode uv
+ motion_vectors_type distance
+ name ScanlineRender96
+ xpos 3732
+ ypos 1892
+}
+Reformat {
+ format "3750 750 0 0 3750 750 1 F"
+ resize distort
+ name Reformat64
+ xpos 3732
+ ypos 2041
+}
+EdgeExtend {
+ sourceIsPremultiplied true
+ premultiply false
+ name EdgeExtend4
+ xpos 3729
+ ypos 2251
+}
+Write {
+ channels rgba
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_F.png
+ colorspace linear
+ file_type png
+ datatype "16 bit"
+ create_directories true
+ checkHashOnRead false
+ version 32
+ name Write3
+ xpos 3729
+ ypos 2687
+}

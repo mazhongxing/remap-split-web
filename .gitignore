@@ -1,0 +1,17 @@
+# 可再生产物 / 临时文件
+__pycache__/
+*.pyc
+*.autosave
+*.nk~
+
+# 三套案例里的中间产物（体积大，且都能重新生成）
+examples/pipeline/qieping_nuke2d/maps/
+examples/pipeline/qieping_uv2d/sets/*/raw/
+examples/pipeline/qieping_web/bake/scratch/
+examples/pipeline/qieping_web/bake/ref/
+
+# 早期版本遗留的未使用素材
+examples/pipeline/qieping_web/bake/assets/grid_?.png
+
+# 已发布的 zip 包（重新打包即可）
+examples/pipeline/qieping_web/*.zip

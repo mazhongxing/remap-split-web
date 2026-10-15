@@ -1,0 +1,326 @@
+#! C:/Program Files/Nuke14.0v2/nuke-14.0.2.dll -nx
+version 14.0 v2
+Root {
+ inputs 0
+ name D:/codex/Nuke插件/qieping_nuke2d/QiePing_2D_v01.nk
+ last_frame 4
+ lock_range true
+ fps 25
+ format "6000 1538 0 0 6000 1538 1 QP_SRC"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ monitorOutLUT rec709
+ int8Lut sRGB
+ int16Lut sRGB
+ logLut Cineon
+ floatLut linear
+}
+BackdropNode {
+ inputs 0
+ name Backdrop_A
+ label "A 屏"
+ note_font_size 90
+ xpos -200
+ ypos -620
+ bdwidth 440
+ bdheight 1000
+}
+BackdropNode {
+ inputs 0
+ name Backdrop_B
+ label "B 屏"
+ note_font_size 90
+ xpos 300
+ ypos -620
+ bdwidth 440
+ bdheight 1000
+}
+BackdropNode {
+ inputs 0
+ name Backdrop_D
+ label "D 屏"
+ note_font_size 90
+ xpos 800
+ ypos -620
+ bdwidth 440
+ bdheight 1000
+}
+BackdropNode {
+ inputs 0
+ name Backdrop_F
+ label "F 屏"
+ note_font_size 90
+ xpos 1300
+ ypos -620
+ bdwidth 440
+ bdheight 1000
+}
+BackdropNode {
+ inputs 0
+ name Backdrop_Src
+ label 换素材只改这里
+ note_font_size 60
+ xpos -520
+ ypos -160
+ bdwidth 360
+ bdheight 400
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/mask_A.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MaskA
+ xpos 130
+ ypos 250
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/map_A.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MapA
+ xpos -120
+ ypos 250
+}
+Read {
+ inputs 0
+ file_type jpeg
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingSuCai/1004/C/###.jpg
+ last 4
+ origlast 4
+ origset true
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name SrcArtwork
+ xpos -400
+}
+set N106b2000 [stack 0]
+Dot {
+ name Dot1
+ xpos -60
+ ypos 120
+}
+Dot {
+ name Dot2
+ xpos -60
+ ypos -80
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapA
+ xpos 0
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ maskChannelMask none
+ name CoverageA
+ xpos 0
+ ypos -250
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/QiePing2D_1004C/QiePing2D_1004C_A/QiePing2D_1004C_A.####.png
+ file_type png
+ create_directories true
+ checkHashOnRead false
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name WriteA
+ xpos 0
+ ypos -500
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/mask_B.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MaskB
+ xpos 630
+ ypos 250
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/map_B.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MapB
+ xpos 380
+ ypos 250
+}
+push $N106b2000
+Dot {
+ name Dot3
+ xpos 440
+ ypos 120
+}
+Dot {
+ name Dot4
+ xpos 440
+ ypos -80
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapB
+ xpos 500
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ maskChannelMask none
+ name CoverageB
+ xpos 500
+ ypos -250
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/QiePing2D_1004C/QiePing2D_1004C_B/QiePing2D_1004C_B.####.png
+ file_type png
+ create_directories true
+ checkHashOnRead false
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name WriteB
+ xpos 500
+ ypos -500
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/mask_D.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MaskD
+ xpos 1130
+ ypos 250
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/map_D.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MapD
+ xpos 880
+ ypos 250
+}
+push $N106b2000
+Dot {
+ name Dot5
+ xpos 940
+ ypos 120
+}
+Dot {
+ name Dot6
+ xpos 940
+ ypos -80
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapD
+ xpos 1000
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ maskChannelMask none
+ name CoverageD
+ xpos 1000
+ ypos -250
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/QiePing2D_1004C/QiePing2D_1004C_D/QiePing2D_1004C_D.####.png
+ file_type png
+ create_directories true
+ checkHashOnRead false
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name WriteD
+ xpos 1000
+ ypos -500
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/mask_F.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MaskF
+ xpos 1630
+ ypos 250
+}
+Read {
+ inputs 0
+ file_type png
+ file D:/codex/Nuke插件/qieping_nuke2d/maps/map_F.png
+ origset true
+ colorspace linear
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name MapF
+ xpos 1380
+ ypos 250
+}
+push $N106b2000
+Dot {
+ name Dot7
+ xpos 1440
+ ypos 120
+}
+Dot {
+ name Dot8
+ xpos 1440
+ ypos -80
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapF
+ xpos 1500
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ maskChannelMask none
+ name CoverageF
+ xpos 1500
+ ypos -250
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/QiePing2D_1004C/QiePing2D_1004C_F/QiePing2D_1004C_F.####.png
+ file_type png
+ create_directories true
+ checkHashOnRead false
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name WriteF
+ xpos 1500
+ ypos -500
+}

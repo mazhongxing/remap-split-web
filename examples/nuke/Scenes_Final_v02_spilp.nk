@@ -1,0 +1,461 @@
+#! C:/Program Files/Nuke14.0v2/nuke-14.0.2.dll -nx
+version 14.0 v2
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="0" w="1917" h="1128" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="1254" stretch="1"/>
+            <splitter orientation="2">
+                <split size="638"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="448"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Nuke/Scenes_Final_v02_spilp.nk
+ frame 285
+ last_frame 480
+ lock_range true
+ fps 25
+ format "6000 1538 0 0 6000 1538 1 "
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ monitorOutLUT rec709
+ int8Lut sRGB
+ int16Lut sRGB
+ logLut Cineon
+ floatLut linear
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode1
+ tile_color 0x8e388e00
+ label 切屏素材(SRGB)
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 4875
+ ypos 1248
+ bdwidth 1175
+ bdheight 375
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode3
+ tile_color 0xff5f00ff
+ label A屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 4731
+ ypos 2371
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode4
+ tile_color 0xff00bfff
+ label B屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 5151
+ ypos 2364
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode5
+ tile_color 0xffbf00ff
+ label D屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 5623
+ ypos 2370
+ bdwidth 192
+ bdheight 455
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode6
+ tile_color 0x7f00ffff
+ label F屏
+ note_font "Verdana Bold"
+ note_font_size 100
+ xpos 5992
+ ypos 2369
+ bdwidth 192
+ bdheight 455
+}
+Read {
+ inputs 0
+ file_type png
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_B.png
+ format "6600 1580 0 0 6600 1580 1 B"
+ origset true
+ colorspace linear
+ name UV_F3
+ xpos 5337
+ ypos 1775
+}
+Dot {
+ name Dot29
+ xpos 5371
+ ypos 1908
+}
+set Na8481800 [stack 0]
+Shuffle2 {
+ fromInput1 {{0} B}
+ fromInput2 {{0} B}
+ mappings "4 rgba.alpha 0 3 rgba.red 0 0 rgba.alpha 0 3 rgba.green 0 1 rgba.alpha 0 3 rgba.blue 0 2 rgba.alpha 0 3 rgba.alpha 0 3"
+ name Shuffle3
+ xpos 5337
+ ypos 1956
+}
+Dot {
+ name Dot30
+ xpos 5371
+ ypos 2027
+}
+push $Na8481800
+Read {
+ inputs 0
+ file_type jpeg
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/source/1006/water.jpg
+ format "6000 1538 0 0 6000 1538 1 "
+ origset true
+ name Read1
+ xpos 5323
+ ypos 1415
+}
+Dot {
+ name Dot26
+ xpos 5357
+ ypos 1560
+}
+set Na84b0800 [stack 0]
+Dot {
+ name Dot31
+ xpos 5246
+ ypos 1778
+ hide_input true
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapA2
+ xpos 5212
+ ypos 1899
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ name Merge4
+ xpos 5212
+ ypos 2024
+}
+set Na84b1400 [stack 0]
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/1014/04_JH-Final_1014/04_JH-Final_1014_B.mov
+ colorspace sRGB
+ file_type mov
+ mov64_format "mov (QuickTime / MOV)"
+ mov64_codec appr
+ mov_h264_codec_profile "High 4:2:0 8-bit"
+ mov64_pixel_format {{0} "yuv420p\tYCbCr 4:2:0 8-bit"}
+ mov64_quality High
+ mov64_fast_start true
+ mov64_write_timecode true
+ mov64_gop_size 12
+ mov64_b_frames 0
+ mov64_bitrate 20000
+ mov64_bitrate_tolerance 4000000
+ mov64_quality_min 1
+ mov64_quality_max 3
+ create_directories true
+ last 3625
+ use_limit true
+ checkHashOnRead false
+ version 31
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name Write62
+ xpos 5212
+ ypos 2633
+}
+Read {
+ inputs 0
+ file_type png
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_F.png
+ format "3750 750 0 0 3750 750 1 F"
+ origset true
+ colorspace linear
+ name UV_F1
+ xpos 6168
+ ypos 1770
+}
+Dot {
+ name Dot35
+ xpos 6202
+ ypos 1897
+}
+set Ncada000 [stack 0]
+Shuffle2 {
+ fromInput1 {{0} B}
+ fromInput2 {{0} B}
+ mappings "4 rgba.alpha 0 3 rgba.red 0 0 rgba.alpha 0 3 rgba.green 0 1 rgba.alpha 0 3 rgba.blue 0 2 rgba.alpha 0 3 rgba.alpha 0 3"
+ name Shuffle5
+ xpos 6168
+ ypos 1945
+}
+Dot {
+ name Dot36
+ xpos 6202
+ ypos 2016
+}
+push $Ncada000
+push $Na84b0800
+Dot {
+ name Dot37
+ xpos 6077
+ ypos 1767
+ hide_input true
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapA4
+ xpos 6043
+ ypos 1888
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ name Merge6
+ xpos 6043
+ ypos 2013
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/1014/04_JH-Final_1014/04_JH-Final_1014_F.mov
+ colorspace sRGB
+ file_type mov
+ mov64_format "mov (QuickTime / MOV)"
+ mov64_codec appr
+ mov_h264_codec_profile "High 4:2:0 8-bit"
+ mov64_pixel_format {{0} "yuv420p\tYCbCr 4:2:0 8-bit"}
+ mov64_quality High
+ mov64_fast_start true
+ mov64_write_timecode true
+ mov64_gop_size 12
+ mov64_b_frames 0
+ mov64_bitrate 20000
+ mov64_bitrate_tolerance 4000000
+ mov64_quality_min 1
+ mov64_quality_max 3
+ create_directories true
+ last 3625
+ use_limit true
+ checkHashOnRead false
+ version 32
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name Write64
+ xpos 6043
+ ypos 2627
+}
+Read {
+ inputs 0
+ file_type png
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_A.png
+ format "6600 1700 0 0 6600 1700 1 A"
+ origset true
+ colorspace linear
+ name UV_F4
+ xpos 4917
+ ypos 1771
+}
+Dot {
+ name Dot27
+ xpos 4951
+ ypos 1915
+}
+set Ncb18000 [stack 0]
+Shuffle2 {
+ fromInput1 {{0} B}
+ fromInput2 {{0} B}
+ mappings "4 rgba.alpha 0 3 rgba.red 0 0 rgba.alpha 0 3 rgba.green 0 1 rgba.alpha 0 3 rgba.blue 0 2 rgba.alpha 0 3 rgba.alpha 0 3"
+ name Shuffle2
+ xpos 4917
+ ypos 1963
+}
+Dot {
+ name Dot28
+ xpos 4951
+ ypos 2034
+}
+push $Ncb18000
+push $Na84b0800
+Dot {
+ name Dot25
+ xpos 4826
+ ypos 1785
+ hide_input true
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapA1
+ xpos 4792
+ ypos 1906
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ name Merge3
+ xpos 4792
+ ypos 2031
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/1014/04_JH-Final_1014/04_JH-Final_1014_A.mov
+ colorspace sRGB
+ file_type mov
+ mov64_format "mov (QuickTime / MOV)"
+ mov64_codec appr
+ mov_h264_codec_profile "High 4:2:0 8-bit"
+ mov64_pixel_format {{0} "yuv420p\tYCbCr 4:2:0 8-bit"}
+ mov64_quality High
+ mov64_fast_start true
+ mov64_write_timecode true
+ mov64_gop_size 12
+ mov64_b_frames 0
+ mov64_bitrate 20000
+ mov64_bitrate_tolerance 4000000
+ mov64_quality_min 1
+ mov64_quality_max 3
+ create_directories true
+ last 3625
+ use_limit true
+ checkHashOnRead false
+ version 32
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name Write61
+ xpos 4792
+ ypos 2639
+}
+Read {
+ inputs 0
+ file_type png
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/QiePingUV/QingPing_UV_D.png
+ format "3400 1300 0 0 3400 1300 1 D_1"
+ origset true
+ colorspace linear
+ name UV_F2
+ xpos 5804
+ ypos 1754
+}
+Dot {
+ name Dot32
+ xpos 5838
+ ypos 1893
+}
+set Na84f6000 [stack 0]
+Shuffle2 {
+ fromInput1 {{0} B}
+ fromInput2 {{0} B}
+ mappings "4 rgba.alpha 0 3 rgba.red 0 0 rgba.alpha 0 3 rgba.green 0 1 rgba.alpha 0 3 rgba.blue 0 2 rgba.alpha 0 3 rgba.alpha 0 3"
+ name Shuffle4
+ xpos 5804
+ ypos 1941
+}
+Dot {
+ name Dot33
+ xpos 5838
+ ypos 2012
+}
+push $Na84f6000
+push $Na84b0800
+Dot {
+ name Dot34
+ xpos 5713
+ ypos 1763
+ hide_input true
+}
+STMap {
+ inputs 2
+ uv rgba
+ filter Mitchell
+ name RemapA3
+ xpos 5679
+ ypos 1884
+}
+Merge2 {
+ inputs 2
+ operation multiply
+ name Merge5
+ xpos 5679
+ ypos 2009
+}
+Write {
+ file W:/2026/20260701_LangJiu_ShanGuGuangYingXiu/comp/Out_QiePing/1014/04_JH-Final_1014/04_JH-Final_1014_D.mov
+ colorspace sRGB
+ file_type mov
+ mov64_format "mov (QuickTime / MOV)"
+ mov64_codec appr
+ mov_h264_codec_profile "High 4:2:0 8-bit"
+ mov64_pixel_format {{0} "yuv420p\tYCbCr 4:2:0 8-bit"}
+ mov64_quality High
+ mov64_fast_start true
+ mov64_write_timecode true
+ mov64_gop_size 12
+ mov64_b_frames 0
+ mov64_bitrate 20000
+ mov64_bitrate_tolerance 4000000
+ mov64_quality_min 1
+ mov64_quality_max 3
+ create_directories true
+ last 3625
+ use_limit true
+ checkHashOnRead false
+ version 30
+ in_colorspace scene_linear
+ out_colorspace scene_linear
+ name Write63
+ xpos 5679
+ ypos 2630
+}
+push $Na84b1400
+Viewer {
+ frame_range 1-480
+ fps 25
+ monitorOutOutputTransform rec709
+ name Viewer1
+ xpos 1569
+ ypos 2626
+}

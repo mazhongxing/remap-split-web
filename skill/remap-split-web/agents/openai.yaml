@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remap Split Web"
+  short_description: "把 DCC 重映射切分流程做成单文件网页工具"
+  default_prompt: "用 $remap-split-web 把这套固定的切分流程做成一个免安装的单文件网页工具。"

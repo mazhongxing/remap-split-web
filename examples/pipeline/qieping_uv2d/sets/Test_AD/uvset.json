@@ -1,0 +1,43 @@
+{
+  "name": "Test_AD",
+  "vAxis": "bottom",
+  "cell": 4,
+  "screens": [
+    {
+      "name": "A",
+      "out": [
+        6600,
+        1700
+      ],
+      "grid": [
+        1650,
+        425
+      ],
+      "pad": [
+        6600,
+        1700
+      ],
+      "gridU": "gridU_A.png",
+      "gridV": "gridV_A.png",
+      "mask": "mask_A.png"
+    },
+    {
+      "name": "D",
+      "out": [
+        3400,
+        1300
+      ],
+      "grid": [
+        850,
+        325
+      ],
+      "pad": [
+        3400,
+        1300
+      ],
+      "gridU": "gridU_D.png",
+      "gridV": "gridV_D.png",
+      "mask": "mask_D.png"
+    }
+  ]
+}
